@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- บังคับเต็มจอ iPad -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V2.5 Cinematic</title>
+    <title>OBSCam Sender V2.6 Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -663,7 +664,6 @@
                 document.getElementById('live-ui').classList.remove('hidden');
                 checkZoomCapabilities();
 
-                // รีเซ็ตปุ่ม Cinematic
                 document.getElementById('cinematic-btn').classList.remove('bg-pink-500');
 
                 connectOBS(roomId, targetCamIndex);
@@ -672,31 +672,18 @@
             } catch (e) { alert('Camera/Mic Error: ' + e.message); }
         }
 
-        // ==========================================
-        // ฟังก์ชันสั่งการ WebRTC Background Blur API
-        // ==========================================
         async function toggleCinematicBlur() {
             if (!videoTrack) return;
-            
             try {
-                // ตรวจสอบว่าเบราว์เซอร์นี้รองรับ backgroundBlur API ผ่านโค้ดหรือไม่
                 const capabilities = navigator.mediaDevices.getSupportedConstraints();
-                
                 if (!capabilities.backgroundBlur) {
                     alert("ระบบ iOS/iPadOS ปิดกั้นไม่ให้ควบคุมเอฟเฟกต์ภาพยนตร์ผ่านโค้ดโดยตรงครับ 😭\n\nวิธีเปิดการใช้งาน (เนียนกว่าและไม่กินแบต):\n1. ปัดหน้าจอจากมุมขวาบนลงมาเพื่อเปิด Control Center\n2. เลือก Video Effects (เอฟเฟกต์วิดีโอ)\n3. แตะเปิด Portrait (ภาพถ่ายบุคคล)");
                     return;
                 }
-
                 const currentSettings = videoTrack.getSettings();
                 const isBlurEnabled = currentSettings.backgroundBlur || false;
-                
-                // สั่งเปิด/ปิด
-                await videoTrack.applyConstraints({
-                    advanced: [{ backgroundBlur: !isBlurEnabled }]
-                });
-                
+                await videoTrack.applyConstraints({ advanced: [{ backgroundBlur: !isBlurEnabled }] });
                 document.getElementById('cinematic-btn').classList.toggle('bg-pink-500');
-                
             } catch (e) {
                 alert("เกิดข้อผิดพลาดในการเปิดโหมดภาพยนตร์: " + e.message);
             }
@@ -740,11 +727,14 @@
             document.getElementById('overlay-controls').classList.toggle('ui-hidden');
         }
 
+        // ==========================================
+        // อัปเดต: เอา Reconnect ออก เพื่อไม่ให้กล้องดับ
+        // เปลี่ยนบิดเรตแบบ Dynamic ลื่นๆ ทันที
+        // ==========================================
         function updateLiveBitrate(val) {
             if (!isNaN(val)) customBitrateVal = parseInt(val);
             if (pc) {
                 setBitrate(pc, parseInt(val) * 1000);
-                reconnectSignaling(); 
             }
         }
 
@@ -864,7 +854,8 @@
                     pc.restartIce();
                     pc.createOffer({ iceRestart: true }).then(async newOffer => {
                         let finalSDP = preferCodec(newOffer.sdp, 'H264');
-                        finalSDP = setMediaBitrateSDP(finalSDP, getTargetBitrate());
+                        // ตั้งเพดาน SDP ให้รับ 10M เสมอ เพื่อให้ปรับเปลี่ยนผ่าน UI ได้อิสระ
+                        finalSDP = setMediaBitrateSDP(finalSDP, 10000); 
                         newOffer = new RTCSessionDescription({ type: 'offer', sdp: finalSDP });
                         await pc.setLocalDescription(newOffer);
                         await roomRef.child('offer').set({ sdp: newOffer.sdp, type: newOffer.type });
@@ -874,7 +865,8 @@
 
             let offer = await pc.createOffer();
             let finalSDP = preferCodec(offer.sdp, 'H264');
-            finalSDP = setMediaBitrateSDP(finalSDP, getTargetBitrate());
+            // ตั้งเพดาน SDP ให้รับ 10M เสมอ 
+            finalSDP = setMediaBitrateSDP(finalSDP, 10000); 
             offer = new RTCSessionDescription({ type: 'offer', sdp: finalSDP });
 
             await pc.setLocalDescription(offer);
@@ -897,6 +889,7 @@
                 }
             });
 
+            // เซ็ตบิดเรตจริงที่ต้องการใช้งานผ่านคำสั่ง setParameters
             setBitrate(pc, getTargetBitrate() * 1000);
         }
 
