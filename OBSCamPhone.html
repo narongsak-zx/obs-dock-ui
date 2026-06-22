@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V2.5 Ninja</title>
+    <title>OBSCam Sender V2.5 Cinematic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -35,7 +35,7 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* ป้องกันภาพขาด */
+            object-fit: contain;
             transform: translateZ(0);
         }
 
@@ -365,6 +365,9 @@
                 <button onclick="toggleTorch()" id="torch-btn"
                     class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-yellow-500 text-white"><i
                         class="fas fa-bolt"></i></button>
+                <button onclick="toggleCinematicBlur()" id="cinematic-btn"
+                    class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-pink-500 text-white" title="Cinematic Blur"><i
+                        class="fas fa-user-circle"></i></button>
                 <button onclick="toggleMic()" id="mic-btn"
                     class="w-10 h-10 rounded-full bg-black/40 border border-white/30 backdrop-blur flex items-center justify-center active:bg-green-500 text-white"><i
                         class="fas fa-microphone"></i></button>
@@ -652,7 +655,6 @@
                 videoTrack = myStream.getVideoTracks()[0];
                 audioTrack = myStream.getAudioTracks()[0];
                 
-                // บังคับ "ชัดเป๊ะ" (Detail) 
                 if (videoTrack) videoTrack.contentHint = "detail";
                 if (audioTrack) audioTrack.enabled = startUnmuted;
 
@@ -661,10 +663,43 @@
                 document.getElementById('live-ui').classList.remove('hidden');
                 checkZoomCapabilities();
 
+                // รีเซ็ตปุ่ม Cinematic
+                document.getElementById('cinematic-btn').classList.remove('bg-pink-500');
+
                 connectOBS(roomId, targetCamIndex);
                 startUpdatingStats();
 
             } catch (e) { alert('Camera/Mic Error: ' + e.message); }
+        }
+
+        // ==========================================
+        // ฟังก์ชันสั่งการ WebRTC Background Blur API
+        // ==========================================
+        async function toggleCinematicBlur() {
+            if (!videoTrack) return;
+            
+            try {
+                // ตรวจสอบว่าเบราว์เซอร์นี้รองรับ backgroundBlur API ผ่านโค้ดหรือไม่
+                const capabilities = navigator.mediaDevices.getSupportedConstraints();
+                
+                if (!capabilities.backgroundBlur) {
+                    alert("ระบบ iOS/iPadOS ปิดกั้นไม่ให้ควบคุมเอฟเฟกต์ภาพยนตร์ผ่านโค้ดโดยตรงครับ 😭\n\nวิธีเปิดการใช้งาน (เนียนกว่าและไม่กินแบต):\n1. ปัดหน้าจอจากมุมขวาบนลงมาเพื่อเปิด Control Center\n2. เลือก Video Effects (เอฟเฟกต์วิดีโอ)\n3. แตะเปิด Portrait (ภาพถ่ายบุคคล)");
+                    return;
+                }
+
+                const currentSettings = videoTrack.getSettings();
+                const isBlurEnabled = currentSettings.backgroundBlur || false;
+                
+                // สั่งเปิด/ปิด
+                await videoTrack.applyConstraints({
+                    advanced: [{ backgroundBlur: !isBlurEnabled }]
+                });
+                
+                document.getElementById('cinematic-btn').classList.toggle('bg-pink-500');
+                
+            } catch (e) {
+                alert("เกิดข้อผิดพลาดในการเปิดโหมดภาพยนตร์: " + e.message);
+            }
         }
 
         function toggleMic() {
@@ -747,10 +782,6 @@
             return parseInt(document.getElementById('live-bitrate').value) || 6000; 
         }
 
-        // ==========================================
-        // ฟังก์ชันไม้ตาย: SDP Munging 
-        // แทรกแซงแบนด์วิดท์ ยัด Bitrate 10M
-        // ==========================================
         function setMediaBitrateSDP(sdp, bitrate) {
             let lines = sdp.split('\n');
             let line = -1;
@@ -913,7 +944,6 @@
                 if (!params.encodings) params.encodings = [{}];
                 
                 params.encodings[0].maxBitrate = bitrate;
-                // เน้นความชัด (maintain-resolution)
                 params.encodings[0].degradationPreference = 'maintain-resolution';
                 sender.setParameters(params).catch(e => console.log(e));
             }
@@ -1162,10 +1192,6 @@
             if (qrStream) qrStream.getTracks().forEach(t => t.stop()); 
         }
 
-        // ==========================================
-        // ฟังก์ชันไม้ตาย: Auto-Resume Camera สำหรับ iOS
-        // ป้องกันแอปพับแล้วกล้องดับ
-        // ==========================================
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'visible') {
                 if (videoTrack && videoTrack.readyState === 'ended') {
