@@ -199,7 +199,8 @@
             <i class="fas fa-video text-4xl mb-3 opacity-50"></i>
             <p class="font-mono text-sm">WAITING FOR CAMERA...</p>
         </div>
-        <video id="remote-video" autoplay playsinline></video>
+        <!-- เพิ่ม muted ตรงนี้เพื่อให้ Chrome ยอมเล่นภาพอัตโนมัติ -->
+        <video id="remote-video" autoplay playsinline muted></video>
         <button onclick="window.location.reload()" class="reset-screen-btn">
             <i class="fas fa-sync"></i> Reset
         </button>
