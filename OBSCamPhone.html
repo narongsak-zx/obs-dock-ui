@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V3.1 Pro UI (Full)</title>
+    <title>OBSCam Sender V3.2 Pro UI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -118,7 +118,6 @@
             }
 
             .zoom-wrapper {
-                /* ขยับออกมาเป็น 160px เพื่อไม่ให้ทับปุ่มแดงใน Dock */
                 right: 160px;
                 top: 50%;
                 transform: translateY(-50%);
@@ -475,13 +474,16 @@
                     <option value="60">60 FPS</option>
                     <option value="30">30 FPS</option>
                 </select>
-                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
+                <select id="live-bitrate" onchange="handleLiveBitrateChange(this)"
                     class="bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
                     <option value="2000">2.0 M</option>
+                    <option value="2500">2.5 M</option>
                     <option value="3000">3.0 M</option>
+                    <option value="4000">4.0 M</option>
                     <option value="6000">6.0 M</option>
                     <option value="8500">8.5 M</option>
                     <option value="10000">10.0 M</option>
+                    <option value="custom">Custom...</option>
                 </select>
             </div>
 
@@ -720,6 +722,33 @@
             }
         }
 
+        // ==========================================
+        // ฟังก์ชันใหม่: ดักจับการกรอก Custom Bitrate ตอนไลฟ์
+        // ==========================================
+        function handleLiveBitrateChange(el) {
+            if (el.value === 'custom') {
+                const val = prompt("Enter Custom Bitrate (kbps):", customBitrateVal);
+                if (val && !isNaN(val)) {
+                    customBitrateVal = parseInt(val);
+                    
+                    // เช็คว่าเคยเพิ่มตัวเลือกนี้ไปหรือยัง จะได้ไม่ซ้ำ
+                    let existingOpt = Array.from(el.options).find(o => o.value === val.toString());
+                    if (!existingOpt) {
+                        let opt = new Option(`${(customBitrateVal / 1000).toFixed(1)} M`, val);
+                        // แทรก option ใหม่ให้อยู่ก่อนปุ่ม 'custom...'
+                        el.add(opt, el.options[el.options.length - 1]);
+                    }
+                    el.value = val;
+                    updateLiveBitrate(val);
+                } else {
+                    el.value = "6000"; // กลับไปค่าเริ่มต้นถ้ากรอกผิด
+                    updateLiveBitrate(6000);
+                }
+            } else {
+                updateLiveBitrate(el.value);
+            }
+        }
+
         async function startStreaming() {
             if (myStream) {
                 myStream.getTracks().forEach(track => track.stop());
@@ -779,7 +808,8 @@
                 let existingOpt = Array.from(liveBitSel.options).find(o => o.value === customBitrateVal.toString());
                 if (!existingOpt) {
                     let opt = new Option(`${(customBitrateVal / 1000).toFixed(1)} M`, customBitrateVal);
-                    liveBitSel.add(opt);
+                    // แทรก option ใหม่ให้อยู่ก่อนปุ่ม 'custom...'
+                    liveBitSel.add(opt, liveBitSel.options[liveBitSel.options.length - 1]);
                 }
                 liveBitSel.value = customBitrateVal;
             } else {
@@ -896,9 +926,9 @@
         function updateLiveBitrate(val) {
             if (!isNaN(val)) {
                 customBitrateVal = parseInt(val);
-            }
-            if (pc) {
-                setBitrate(pc, parseInt(val) * 1000);
+                if (pc) {
+                    setBitrate(pc, customBitrateVal * 1000);
+                }
             }
         }
 
