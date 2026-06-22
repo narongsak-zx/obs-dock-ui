@@ -6,12 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V3.2 Pro UI</title>
+    <title>OBSCam Sender V3.2 AI Cinematic</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
 
     <style>
         body {
@@ -543,6 +545,19 @@
         let currentMaxCams = 4;
         let currentRoomName = '';
 
+        // ==========================================
+        // ตัวแปรสำหรับ AI Cinematic Mode (MediaPipe)
+        // ==========================================
+        let isCinematicOn = false;
+        let selfieSegmentation = null;
+        let blurCanvas = document.createElement('canvas');
+        let blurCtx = blurCanvas.getContext('2d');
+        // วิดีโอซ่อนสำหรับเป็นตัวป้อนภาพให้ AI แบบไม่รบกวนหน้าจอหลัก
+        let rawVideo = document.createElement('video');
+        rawVideo.autoplay = true;
+        rawVideo.playsInline = true;
+        let aiLoop = null;
+
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
 
@@ -587,7 +602,7 @@
         }
 
         // ============================
-        // ฟังก์ชันควบคุม UI ใหม่
+        // ฟังก์ชันควบคุม UI
         // ============================
         function toggleSettingsModal(show) {
             const modal = document.getElementById('settings-ui');
@@ -609,12 +624,10 @@
         }
 
         function toggleUI(e) {
-            // ซ่อน/แสดง ควบคุมเมื่อแตะที่ว่างบนวิดีโอ
             if (e.target.id === 'preview' || e.target.id === 'live-ui') {
                 document.getElementById('overlay-controls').classList.toggle('ui-hidden');
             }
         }
-        // ============================
 
         function loadSettings() {
             if (roomFromUrl) {
@@ -625,21 +638,11 @@
                 checkRoomConfig();
             }
 
-            if (localStorage.getItem('obs_cam_index')) {
-                document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
-            }
-            if (localStorage.getItem('obs_camera_id')) {
-                document.getElementById('camera-select').value = localStorage.getItem('obs_camera_id');
-            }
-            if (localStorage.getItem('obs_audio_id')) {
-                document.getElementById('audio-source').value = localStorage.getItem('obs_audio_id');
-            }
-            if (localStorage.getItem('obs_res')) {
-                document.getElementById('res').value = localStorage.getItem('obs_res');
-            }
-            if (localStorage.getItem('obs_fps')) {
-                document.getElementById('fps').value = localStorage.getItem('obs_fps');
-            }
+            if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
+            if (localStorage.getItem('obs_camera_id')) document.getElementById('camera-select').value = localStorage.getItem('obs_camera_id');
+            if (localStorage.getItem('obs_audio_id')) document.getElementById('audio-source').value = localStorage.getItem('obs_audio_id');
+            if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
+            if (localStorage.getItem('obs_fps')) document.getElementById('fps').value = localStorage.getItem('obs_fps');
 
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
@@ -722,26 +725,20 @@
             }
         }
 
-        // ==========================================
-        // ฟังก์ชันใหม่: ดักจับการกรอก Custom Bitrate ตอนไลฟ์
-        // ==========================================
         function handleLiveBitrateChange(el) {
             if (el.value === 'custom') {
                 const val = prompt("Enter Custom Bitrate (kbps):", customBitrateVal);
                 if (val && !isNaN(val)) {
                     customBitrateVal = parseInt(val);
-                    
-                    // เช็คว่าเคยเพิ่มตัวเลือกนี้ไปหรือยัง จะได้ไม่ซ้ำ
                     let existingOpt = Array.from(el.options).find(o => o.value === val.toString());
                     if (!existingOpt) {
                         let opt = new Option(`${(customBitrateVal / 1000).toFixed(1)} M`, val);
-                        // แทรก option ใหม่ให้อยู่ก่อนปุ่ม 'custom...'
                         el.add(opt, el.options[el.options.length - 1]);
                     }
                     el.value = val;
                     updateLiveBitrate(val);
                 } else {
-                    el.value = "6000"; // กลับไปค่าเริ่มต้นถ้ากรอกผิด
+                    el.value = "6000";
                     updateLiveBitrate(6000);
                 }
             } else {
@@ -749,11 +746,124 @@
             }
         }
 
+        // ==========================================
+        // ระบบ AI Cinematic Blur (Google MediaPipe)
+        // ==========================================
+        function initAI() {
+            if (selfieSegmentation) return;
+            // โหลดโมเดล AI
+            selfieSegmentation = new SelfieSegmentation({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+                }
+            });
+            
+            selfieSegmentation.setOptions({
+                modelSelection: 1, // ใช้โมเดล Landscape แบบ VDO.Ninja (เร็ว ไม่กินเครื่อง)
+            });
+            
+            selfieSegmentation.onResults(onAIResults);
+        }
+
+        function onAIResults(results) {
+            blurCanvas.width = results.image.width;
+            blurCanvas.height = results.image.height;
+            blurCtx.clearRect(0, 0, blurCanvas.width, blurCanvas.height);
+
+            // 1. วาดภาพฉากหลังแบบเบลอ
+            blurCtx.filter = 'blur(12px)';
+            blurCtx.drawImage(results.image, 0, 0, blurCanvas.width, blurCanvas.height);
+
+            // 2. เจาะช่องว่างตรงพื้นที่คน (Mask)
+            blurCtx.filter = 'none';
+            blurCtx.globalCompositeOperation = 'destination-out';
+            blurCtx.drawImage(results.segmentationMask, 0, 0, blurCanvas.width, blurCanvas.height);
+
+            // 3. เอาภาพคนชัดๆ มาแปะลงในช่องว่างนั้น
+            blurCtx.globalCompositeOperation = 'destination-over';
+            blurCtx.drawImage(results.image, 0, 0, blurCanvas.width, blurCanvas.height);
+
+            // คืนค่าการวาดกลับสู่โหมดปกติ
+            blurCtx.globalCompositeOperation = 'source-over';
+        }
+
+        async function processAILoop() {
+            if (!isCinematicOn || !rawVideo.videoWidth) {
+                if (isCinematicOn) {
+                    aiLoop = requestAnimationFrame(processAILoop);
+                }
+                return;
+            }
+            // ป้อนภาพสดให้ AI คำนวณ
+            await selfieSegmentation.send({ image: rawVideo });
+            aiLoop = requestAnimationFrame(processAILoop);
+        }
+
+        async function toggleCinematicBlur() {
+            if (!videoTrack) return;
+            const btn = document.getElementById('cinematic-btn');
+
+            if (!isCinematicOn) {
+                // ---------- เปิด AI Cinematic ----------
+                isCinematicOn = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // โชว์โหลด
+                
+                if (!selfieSegmentation) initAI();
+                
+                // ป้อนภาพสดเข้าวิดีโอซ่อน
+                rawVideo.srcObject = new MediaStream([videoTrack]);
+                await rawVideo.play();
+                
+                // เริ่มรัน AI Loop
+                processAILoop();
+                
+                // แคปเจอร์ภาพที่เบลอแล้วจาก Canvas ส่งเข้า OBS และ Preview
+                const fps = parseInt(document.getElementById('live-fps').value) || 30;
+                const canvasStream = blurCanvas.captureStream(fps);
+                const processedVideoTrack = canvasStream.getVideoTracks()[0];
+                
+                // เปลี่ยนภาพที่ดูบนจอ
+                document.getElementById('preview').srcObject = new MediaStream([processedVideoTrack, audioTrack].filter(Boolean));
+                
+                // เปลี่ยนภาพที่จะส่งออกไป OBS
+                if (pc) {
+                    const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(processedVideoTrack);
+                }
+                
+                btn.innerHTML = '<i class="fas fa-user-circle"></i>';
+                btn.classList.remove('bg-black/60');
+                btn.classList.add('bg-pink-500/90');
+                
+            } else {
+                // ---------- ปิด AI Cinematic ----------
+                isCinematicOn = false;
+                cancelAnimationFrame(aiLoop);
+                
+                // คืนค่าภาพสด
+                document.getElementById('preview').srcObject = myStream;
+                if (pc) {
+                    const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(videoTrack);
+                }
+                
+                btn.classList.remove('bg-pink-500/90');
+                btn.classList.add('bg-black/60');
+            }
+        }
+        // ==========================================
+
         async function startStreaming() {
             if (myStream) {
                 myStream.getTracks().forEach(track => track.stop());
                 myStream = null;
             }
+
+            // รีเซ็ตสถานะ AI
+            isCinematicOn = false;
+            document.getElementById('cinematic-btn').classList.remove('bg-pink-500/90');
+            document.getElementById('cinematic-btn').classList.add('bg-black/60');
+            if (aiLoop) cancelAnimationFrame(aiLoop);
 
             saveSettings();
             roomId = document.getElementById('room-id').value;
@@ -808,7 +918,6 @@
                 let existingOpt = Array.from(liveBitSel.options).find(o => o.value === customBitrateVal.toString());
                 if (!existingOpt) {
                     let opt = new Option(`${(customBitrateVal / 1000).toFixed(1)} M`, customBitrateVal);
-                    // แทรก option ใหม่ให้อยู่ก่อนปุ่ม 'custom...'
                     liveBitSel.add(opt, liveBitSel.options[liveBitSel.options.length - 1]);
                 }
                 liveBitSel.value = customBitrateVal;
@@ -864,45 +973,11 @@
 
                 checkZoomCapabilities();
 
-                document.getElementById('cinematic-btn').classList.remove('bg-pink-500/90');
-                document.getElementById('cinematic-btn').classList.add('bg-black/60');
-
                 connectOBS(roomId, targetCamIndex);
                 startUpdatingStats();
 
             } catch (e) {
                 alert('Camera/Mic Error: ' + e.message);
-            }
-        }
-
-        async function toggleCinematicBlur() {
-            if (!videoTrack) return;
-
-            try {
-                const capabilities = navigator.mediaDevices.getSupportedConstraints();
-
-                if (!capabilities.backgroundBlur) {
-                    alert("ระบบ iOS/iPadOS ปิดกั้นไม่ให้ควบคุมเอฟเฟกต์ภาพยนตร์ผ่านโค้ดโดยตรงครับ 😭\n\nวิธีเปิดการใช้งาน (เนียนกว่าและไม่กินแบต):\n1. ปัดหน้าจอจากมุมขวาบนลงมาเพื่อเปิด Control Center\n2. เลือก Video Effects (เอฟเฟกต์วิดีโอ)\n3. แตะเปิด Portrait (ภาพถ่ายบุคคล)");
-                    return;
-                }
-
-                const currentSettings = videoTrack.getSettings();
-                const isBlurEnabled = currentSettings.backgroundBlur || false;
-
-                await videoTrack.applyConstraints({
-                    advanced: [{ backgroundBlur: !isBlurEnabled }]
-                });
-
-                const btn = document.getElementById('cinematic-btn');
-                if (!isBlurEnabled) {
-                    btn.classList.remove('bg-black/60');
-                    btn.classList.add('bg-pink-500/90');
-                } else {
-                    btn.classList.remove('bg-pink-500/90');
-                    btn.classList.add('bg-black/60');
-                }
-            } catch (e) {
-                alert("เกิดข้อผิดพลาดในการเปิดโหมดภาพยนตร์: " + e.message);
             }
         }
 
@@ -926,9 +1001,9 @@
         function updateLiveBitrate(val) {
             if (!isNaN(val)) {
                 customBitrateVal = parseInt(val);
-                if (pc) {
-                    setBitrate(pc, customBitrateVal * 1000);
-                }
+            }
+            if (pc) {
+                setBitrate(pc, parseInt(val) * 1000);
             }
         }
 
@@ -963,6 +1038,9 @@
             monPc = null;
             statsChannel = null;
             clearInterval(statsInterval);
+            
+            isCinematicOn = false;
+            if (aiLoop) cancelAnimationFrame(aiLoop);
 
             if (roomId && targetCamIndex) {
                 db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/obs`).remove();
@@ -1058,7 +1136,18 @@
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             pc = new RTCPeerConnection(rtcConfig);
 
-            myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
+            // เช็คว่าถ้าเปิด AI อยู่ ให้ส่งภาพจาก Canvas ไปแทนภาพสด
+            let trackToSend = videoTrack;
+            if (isCinematicOn) {
+                const canvasStream = blurCanvas.captureStream(parseInt(document.getElementById('live-fps').value) || 30);
+                trackToSend = canvasStream.getVideoTracks()[0];
+            }
+            
+            pc.addTrack(trackToSend, myStream);
+            if (audioTrack) {
+                pc.addTrack(audioTrack, myStream);
+            }
+            
             connectMonitor(rid, cIdx);
 
             let pendingCandidates = [];
@@ -1353,13 +1442,6 @@
                 }
                 const newVideoTrack = newStream.getVideoTracks()[0];
 
-                if (pc) {
-                    const sender = pc.getSenders().find(s => s.track.kind === 'video');
-                    if (sender) {
-                        sender.replaceTrack(newVideoTrack);
-                    }
-                }
-
                 videoTrack = newVideoTrack;
                 videoTrack.contentHint = "detail";
 
@@ -1369,7 +1451,30 @@
                 }
                 myStream = new MediaStream(tracks);
 
-                document.getElementById('preview').srcObject = myStream;
+                // ตรวจสอบการทำงานของโหมด AI
+                if (isCinematicOn) {
+                    rawVideo.srcObject = new MediaStream([videoTrack]);
+                    const canvasStream = blurCanvas.captureStream(fpsVal || 30);
+                    const processedVideoTrack = canvasStream.getVideoTracks()[0];
+                    
+                    document.getElementById('preview').srcObject = new MediaStream([processedVideoTrack, audioTrack].filter(Boolean));
+                    
+                    if (pc) {
+                        const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                        if (sender) {
+                            sender.replaceTrack(processedVideoTrack);
+                        }
+                    }
+                } else {
+                    document.getElementById('preview').srcObject = myStream;
+                    if (pc) {
+                        const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                        if (sender) {
+                            sender.replaceTrack(newVideoTrack);
+                        }
+                    }
+                }
+
                 checkZoomCapabilities();
                 updateLiveResDisplay();
 
@@ -1414,7 +1519,12 @@
                 }
                 myStream = new MediaStream(tracks);
 
-                document.getElementById('preview').srcObject = myStream;
+                if (!isCinematicOn) {
+                    document.getElementById('preview').srcObject = myStream;
+                } else {
+                    const canvasStream = blurCanvas.captureStream(parseInt(document.getElementById('live-fps').value) || 30);
+                    document.getElementById('preview').srcObject = new MediaStream([canvasStream.getVideoTracks()[0], audioTrack]);
+                }
 
                 if (deviceId) {
                     document.getElementById('audio-source').value = deviceId;
