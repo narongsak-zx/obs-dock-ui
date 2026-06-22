@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V2.5c</title>
+    <title>OBSCam Sender V2.5 Ninja</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -35,7 +35,7 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: contain; /* ป้องกันภาพขาด */
             transform: translateZ(0);
         }
 
@@ -225,7 +225,7 @@
                 <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">FPS</label>
                     <select id="fps" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700">
-                        <option value="30" selected>30 (Recommended)</option>
+                        <option value="30" selected>30</option>
                         <option value="60">60</option>
                     </select>
                 </div>
@@ -236,10 +236,12 @@
                 <select id="bitrate" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700"
                     onchange="checkCustomBitrate(this)">
                     <option value="2000">2.0 M</option>
-                    <option value="2500" selected>2.5 M</option>
+                    <option value="2500">2.5 M</option>
                     <option value="3000">3.0 M</option>
                     <option value="4000">4.0 M</option>
-                    <option value="6000">6.0 M</option>
+                    <option value="6000" selected>6.0 M (High)</option>
+                    <option value="8500">8.5 M (Ultra)</option>
+                    <option value="10000">10.0 M (Max)</option>
                     <option value="custom">Custom...</option>
                 </select>
             </div>
@@ -309,15 +311,17 @@
                     <select id="live-fps" onchange="applyLiveSettings()"
                         class="bg-black/60 text-cyan-300 text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur w-14">
                         <option value="60">60</option>
-                        <option value="30" selected>30</option>
+                        <option value="30">30</option>
                     </select>
                     <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
-                        class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur w-20">
+                        class="bg-black/60 text-white text-[10px] h-8 px-2 rounded-lg border border-white/20 outline-none backdrop-blur w-24">
                         <option value="2000">2.0 M</option>
-                        <option value="2500" selected>2.5 M</option>
+                        <option value="2500">2.5 M</option>
                         <option value="3000">3.0 M</option>
                         <option value="4000">4.0 M</option>
                         <option value="6000">6.0 M</option>
+                        <option value="8500">8.5 M</option>
+                        <option value="10000">10.0 M</option>
                     </select>
                 </div>
             </div>
@@ -404,12 +408,12 @@
         let monPc = null;
         let statsChannel = null;
         let myStream, videoTrack, audioTrack, qrStream;
-        let customBitrateVal = 2500, targetCamIndex = "1", roomId = "";
+        let customBitrateVal = 6000, targetCamIndex = "1", roomId = "";
         let isUIRotated = false, statsInterval = null;
-        let lastBytes = 0;
-        let lastTime = 0;
+        let lastBytes = 0; 
+        let lastTime = 0; 
         let sessionTotalBytes = 0;
-        let currentMaxCams = 4;
+        let currentMaxCams = 4; 
         let currentRoomName = '';
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -436,14 +440,12 @@
                 let vCount = 1, aCount = 1;
                 devices.forEach(device => {
                     if (device.kind === 'videoinput') {
-                        const label = device.label || `Camera ${vCount++}`;
-                        const option = new Option(label, device.deviceId);
-                        videoSelect.appendChild(option);
+                        const option = new Option(device.label || `Camera ${vCount++}`, device.deviceId);
+                        videoSelect.appendChild(option); 
                         liveSelect.appendChild(option.cloneNode(true));
                     } else if (device.kind === 'audioinput') {
-                        const label = device.label || `Microphone ${aCount++}`;
-                        const option = new Option(label, device.deviceId);
-                        audioSelect.appendChild(option);
+                        const option = new Option(device.label || `Microphone ${aCount++}`, device.deviceId);
+                        audioSelect.appendChild(option); 
                         liveMicSelect.appendChild(option.cloneNode(true));
                     }
                 });
@@ -452,29 +454,26 @@
 
         function toggleSettingsModal(show) {
             const modal = document.getElementById('settings-ui');
-            if (show) modal.classList.add('active');
-            else modal.classList.remove('active');
+            if (show) {
+                modal.classList.add('active'); 
+            } else {
+                modal.classList.remove('active');
+            }
         }
 
         function loadSettings() {
-            if (roomFromUrl) {
-                document.getElementById('room-id').value = roomFromUrl;
-                checkRoomConfig();
-            } else if (localStorage.getItem('obs_room_id')) {
-                document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
-                checkRoomConfig();
+            if (roomFromUrl) { 
+                document.getElementById('room-id').value = roomFromUrl; 
+                checkRoomConfig(); 
+            } else if (localStorage.getItem('obs_room_id')) { 
+                document.getElementById('room-id').value = localStorage.getItem('obs_room_id'); 
+                checkRoomConfig(); 
             }
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
             if (localStorage.getItem('obs_camera_id')) document.getElementById('camera-select').value = localStorage.getItem('obs_camera_id');
             if (localStorage.getItem('obs_audio_id')) document.getElementById('audio-source').value = localStorage.getItem('obs_audio_id');
-
             if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
-            // Default to 30fps for stability if not set
-            if (localStorage.getItem('obs_fps')) {
-                document.getElementById('fps').value = localStorage.getItem('obs_fps');
-            } else {
-                document.getElementById('fps').value = "30";
-            }
+            if (localStorage.getItem('obs_fps')) { document.getElementById('fps').value = localStorage.getItem('obs_fps'); }
 
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
@@ -483,7 +482,9 @@
                     customBitrateVal = parseInt(localStorage.getItem('obs_custom_bitrate'));
                     sel.options[sel.options.length - 1].text = `Custom (${customBitrateVal})`;
                     sel.value = 'custom';
-                } else { sel.value = b; }
+                } else { 
+                    sel.value = b; 
+                }
             }
         }
 
@@ -495,18 +496,17 @@
             if (rId.length >= 6) {
                 db.ref(`OBSCam_rooms/${rId}/config/maxCams`).once('value').then(snap => {
                     if (snap.exists()) {
-                        const max = snap.val();
-                        currentMaxCams = max;
+                        currentMaxCams = snap.val();
                         const sel = document.getElementById('cam-index');
                         const currentVal = sel.value;
                         sel.innerHTML = '';
-                        for (let i = 1; i <= max; i++) {
+                        for (let i = 1; i <= currentMaxCams; i++) {
                             const opt = document.createElement('option');
-                            opt.value = i;
+                            opt.value = i; 
                             opt.text = `CAMERA ${i}`;
                             sel.appendChild(opt);
                         }
-                        if (currentVal <= max) sel.value = currentVal;
+                        if (currentVal <= currentMaxCams) sel.value = currentVal;
 
                         db.ref(`OBSCam_rooms/${rId}/config/roomName`).once('value').then(nameSnap => {
                             if (nameSnap.exists() && nameSnap.val()) {
@@ -514,16 +514,16 @@
                                 setupNameText.innerText = currentRoomName;
                                 setupNameDiv.classList.remove('hidden');
                             } else {
-                                currentRoomName = '';
+                                currentRoomName = ''; 
                                 setupNameDiv.classList.add('hidden');
                             }
                         });
-                    } else {
-                        setupNameDiv.classList.add('hidden');
+                    } else { 
+                        setupNameDiv.classList.add('hidden'); 
                     }
                 });
-            } else {
-                setupNameDiv.classList.add('hidden');
+            } else { 
+                setupNameDiv.classList.add('hidden'); 
             }
         }
 
@@ -544,14 +544,16 @@
                 if (val && !isNaN(val)) {
                     customBitrateVal = parseInt(val);
                     el.options[el.options.length - 1].text = `Custom (${val})`;
-                } else { el.value = "2500"; }
+                } else { 
+                    el.value = "6000"; 
+                }
             }
         }
 
         async function startStreaming() {
-            if (myStream) {
-                myStream.getTracks().forEach(track => track.stop());
-                myStream = null;
+            if (myStream) { 
+                myStream.getTracks().forEach(track => track.stop()); 
+                myStream = null; 
             }
 
             saveSettings();
@@ -562,11 +564,11 @@
             document.getElementById('status-txt').innerText = "CHECKING...";
 
             const liveNameEl = document.getElementById('live-room-name');
-            if (currentRoomName) {
-                liveNameEl.innerText = currentRoomName;
-                liveNameEl.classList.remove('hidden');
-            } else {
-                liveNameEl.classList.add('hidden');
+            if (currentRoomName) { 
+                liveNameEl.innerText = currentRoomName; 
+                liveNameEl.classList.remove('hidden'); 
+            } else { 
+                liveNameEl.classList.add('hidden'); 
             }
 
             const roomSnap = await db.ref(`OBSCam_rooms/${roomId}/active`).get();
@@ -575,7 +577,7 @@
             targetCamIndex = document.getElementById('cam-index').value;
             if (parseInt(targetCamIndex) > currentMaxCams) {
                 alert(`Error: This room only supports ${currentMaxCams} cameras. Please refresh or select a lower slot.`);
-                checkRoomConfig();
+                checkRoomConfig(); 
                 return;
             }
 
@@ -593,9 +595,13 @@
 
             const micBtn = document.getElementById('mic-btn');
             if (startUnmuted) {
-                micBtn.classList.remove('bg-red-500'); micBtn.classList.add('bg-green-500'); micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                micBtn.classList.remove('bg-red-500'); 
+                micBtn.classList.add('bg-green-500'); 
+                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             } else {
-                micBtn.classList.remove('bg-green-500'); micBtn.classList.add('bg-red-500'); micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                micBtn.classList.remove('bg-green-500'); 
+                micBtn.classList.add('bg-red-500'); 
+                micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
             }
 
             const currentBitrateSet = document.getElementById('bitrate').value;
@@ -607,25 +613,38 @@
                     liveBitSel.add(opt);
                 }
                 liveBitSel.value = customBitrateVal;
-            } else { liveBitSel.value = currentBitrateSet; }
+            } else { 
+                liveBitSel.value = currentBitrateSet; 
+            }
 
-            let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal }, resizeMode: "none" };
-            if (selectedCamId) videoConstraints.deviceId = { exact: selectedCamId }; else videoConstraints.facingMode = 'environment';
-
+            let videoConstraints = { 
+                width: { ideal: quality * 1.777 }, 
+                height: { ideal: quality }, 
+                frameRate: { ideal: fpsVal }, 
+                resizeMode: "none" 
+            };
+            
+            if (selectedCamId) {
+                videoConstraints.deviceId = { exact: selectedCamId }; 
+            } else {
+                videoConstraints.facingMode = 'environment';
+            }
+            
             let audioConstraints = true;
-            if (selectedAudioId) {
-                audioConstraints = { deviceId: { exact: selectedAudioId } };
+            if (selectedAudioId) { 
+                audioConstraints = { deviceId: { exact: selectedAudioId } }; 
             }
 
             try {
-                try { myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); }
-                catch (err) {
+                try { 
+                    myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); 
+                } catch (err) {
                     try { 
-                        delete videoConstraints.resizeMode;
+                        delete videoConstraints.resizeMode; 
                         myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); 
-                    }
-                    catch(err2) {
-                        delete videoConstraints.facingMode; delete videoConstraints.deviceId; 
+                    } catch(err2) { 
+                        delete videoConstraints.facingMode; 
+                        delete videoConstraints.deviceId; 
                         myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); 
                     }
                 }
@@ -633,9 +652,8 @@
                 videoTrack = myStream.getVideoTracks()[0];
                 audioTrack = myStream.getAudioTracks()[0];
                 
-                // ให้ WebRTC บาลานซ์การลดทอนภาพเมื่อเน็ตสวิง (ไม่ฝืนจนภาพค้าง)
-                if (videoTrack) videoTrack.contentHint = "motion";
-
+                // บังคับ "ชัดเป๊ะ" (Detail) 
+                if (videoTrack) videoTrack.contentHint = "detail";
                 if (audioTrack) audioTrack.enabled = startUnmuted;
 
                 document.getElementById('preview').srcObject = myStream;
@@ -653,10 +671,14 @@
             if (audioTrack) {
                 audioTrack.enabled = !audioTrack.enabled;
                 const micBtn = document.getElementById('mic-btn');
-                if (audioTrack.enabled) {
-                    micBtn.classList.remove('bg-red-500'); micBtn.classList.add('bg-green-500'); micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
-                } else {
-                    micBtn.classList.remove('bg-green-500'); micBtn.classList.add('bg-red-500'); micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+                if (audioTrack.enabled) { 
+                    micBtn.classList.remove('bg-red-500'); 
+                    micBtn.classList.add('bg-green-500'); 
+                    micBtn.innerHTML = '<i class="fas fa-microphone"></i>'; 
+                } else { 
+                    micBtn.classList.remove('bg-green-500'); 
+                    micBtn.classList.add('bg-red-500'); 
+                    micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>'; 
                 }
             }
         }
@@ -685,7 +707,10 @@
 
         function updateLiveBitrate(val) {
             if (!isNaN(val)) customBitrateVal = parseInt(val);
-            if (pc) setBitrate(pc, parseInt(val) * 1000);
+            if (pc) {
+                setBitrate(pc, parseInt(val) * 1000);
+                reconnectSignaling(); 
+            }
         }
 
         function applyLiveSettings() {
@@ -701,10 +726,10 @@
         function stopStreaming() {
             if (myStream) myStream.getTracks().forEach(track => track.stop());
             if (statsChannel) statsChannel.close();
-            if (pc) pc.close();
+            if (pc) pc.close(); 
             if (monPc) monPc.close();
-            pc = null;
-            monPc = null;
+            pc = null; 
+            monPc = null; 
             statsChannel = null;
             clearInterval(statsInterval);
 
@@ -718,22 +743,61 @@
             sessionTotalBytes = 0;
         }
 
-        function getTargetBitrate() { return parseInt(document.getElementById('live-bitrate').value) || 2500; }
+        function getTargetBitrate() { 
+            return parseInt(document.getElementById('live-bitrate').value) || 6000; 
+        }
+
+        // ==========================================
+        // ฟังก์ชันไม้ตาย: SDP Munging 
+        // แทรกแซงแบนด์วิดท์ ยัด Bitrate 10M
+        // ==========================================
+        function setMediaBitrateSDP(sdp, bitrate) {
+            let lines = sdp.split('\n');
+            let line = -1;
+            for (let i = 0; i < lines.length; i++) { 
+                if (lines[i].indexOf('m=video') === 0) { 
+                    line = i; 
+                    break; 
+                } 
+            }
+            if (line === -1) return sdp;
+            line++;
+            while (line < lines.length && (lines[line].indexOf('i=') === 0 || lines[line].indexOf('c=') === 0)) { 
+                line++; 
+            }
+            if (line < lines.length && lines[line].indexOf('b=AS') === 0) {
+                lines[line] = 'b=AS:' + bitrate; 
+            } else {
+                lines.splice(line, 0, 'b=AS:' + bitrate);
+            }
+            return lines.join('\n');
+        }
 
         function preferCodec(sdp, codec) {
             var sdpLines = sdp.split('\r\n');
             var mLineIndex = -1;
-            for (var i = 0; i < sdpLines.length; i++) { if (sdpLines[i].search('m=video') !== -1) { mLineIndex = i; break; } }
+            for (var i = 0; i < sdpLines.length; i++) { 
+                if (sdpLines[i].search('m=video') !== -1) { 
+                    mLineIndex = i; break; 
+                } 
+            }
             if (mLineIndex === -1) return sdp;
             var codecPayload = null;
             var pattern = new RegExp(":(\\d+) " + codec + "/90000");
-            for (var i = 0; i < sdpLines.length; i++) { var result = sdpLines[i].match(pattern); if (result) { codecPayload = result[1]; break; } }
+            for (var i = 0; i < sdpLines.length; i++) { 
+                var result = sdpLines[i].match(pattern); 
+                if (result) { 
+                    codecPayload = result[1]; break; 
+                } 
+            }
             if (!codecPayload) return sdp;
             var mLine = sdpLines[mLineIndex];
             var elements = mLine.split(' ');
             var newMLine = elements.slice(0, 3);
             newMLine.push(codecPayload);
-            for (var i = 3; i < elements.length; i++) { if (elements[i] !== codecPayload) newMLine.push(elements[i]); }
+            for (var i = 3; i < elements.length; i++) { 
+                if (elements[i] !== codecPayload) newMLine.push(elements[i]); 
+            }
             sdpLines[mLineIndex] = newMLine.join(' ');
             return sdpLines.join('\r\n');
         }
@@ -743,20 +807,15 @@
             pc = new RTCPeerConnection(rtcConfig);
 
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
-
             connectMonitor(rid, cIdx);
 
             let pendingCandidates = [];
             pc.onicecandidate = event => {
                 if (event.candidate) {
-                    pendingCandidates.push({
-                        c: event.candidate.candidate,
-                        m: event.candidate.sdpMid,
-                        i: event.candidate.sdpMLineIndex
-                    });
+                    pendingCandidates.push({ c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex });
                 } else {
-                    if (pendingCandidates.length > 0) {
-                        roomRef.child('callerCandidates').set(pendingCandidates);
+                    if (pendingCandidates.length > 0) { 
+                        roomRef.child('callerCandidates').set(pendingCandidates); 
                     }
                 }
             };
@@ -773,8 +832,9 @@
                     document.getElementById('status-txt').innerText = 'RECONNECTING...';
                     pc.restartIce();
                     pc.createOffer({ iceRestart: true }).then(async newOffer => {
-                        const sdpH264 = preferCodec(newOffer.sdp, 'H264');
-                        newOffer = new RTCSessionDescription({ type: 'offer', sdp: sdpH264 });
+                        let finalSDP = preferCodec(newOffer.sdp, 'H264');
+                        finalSDP = setMediaBitrateSDP(finalSDP, getTargetBitrate());
+                        newOffer = new RTCSessionDescription({ type: 'offer', sdp: finalSDP });
                         await pc.setLocalDescription(newOffer);
                         await roomRef.child('offer').set({ sdp: newOffer.sdp, type: newOffer.type });
                     }).catch(e => console.error(e));
@@ -782,14 +842,15 @@
             };
 
             let offer = await pc.createOffer();
-            const sdpH264 = preferCodec(offer.sdp, 'H264');
-            offer = new RTCSessionDescription({ type: 'offer', sdp: sdpH264 });
+            let finalSDP = preferCodec(offer.sdp, 'H264');
+            finalSDP = setMediaBitrateSDP(finalSDP, getTargetBitrate());
+            offer = new RTCSessionDescription({ type: 'offer', sdp: finalSDP });
 
             await pc.setLocalDescription(offer);
             await roomRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
             roomRef.child('answer').on('value', async snapshot => {
-                const data = snapshot.val();
+                const data = snapshot.val(); 
                 if (!data) return;
                 if (!pc.currentRemoteDescription) await pc.setRemoteDescription(new RTCSessionDescription(data));
             });
@@ -798,19 +859,14 @@
                 const candidates = snapshot.val();
                 if (candidates && Array.isArray(candidates)) {
                     candidates.forEach(c => { 
-                        if (c) {
-                            pc.addIceCandidate(new RTCIceCandidate({
-                                candidate: c.c,
-                                sdpMid: c.m,
-                                sdpMLineIndex: c.i
-                            })).catch(e => { });
+                        if (c) { 
+                            pc.addIceCandidate(new RTCIceCandidate({ candidate: c.c, sdpMid: c.m, sdpMLineIndex: c.i })).catch(e => { }); 
                         }
                     });
                 }
             });
 
-            const bps = getTargetBitrate() * 1000;
-            setBitrate(pc, bps);
+            setBitrate(pc, getTargetBitrate() * 1000);
         }
 
         async function connectMonitor(rid, cIdx) {
@@ -823,10 +879,10 @@
 
             let pendingCandidates = [];
             monPc.onicecandidate = event => {
-                if (event.candidate) {
-                    pendingCandidates.push({c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex});
-                } else if (pendingCandidates.length > 0) {
-                    monRef.child('callerCandidates').set(pendingCandidates);
+                if (event.candidate) { 
+                    pendingCandidates.push({c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex}); 
+                } else if (pendingCandidates.length > 0) { 
+                    monRef.child('callerCandidates').set(pendingCandidates); 
                 }
             };
 
@@ -835,7 +891,8 @@
             await monRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
             monRef.child('answer').on('value', async snapshot => {
-                const data = snapshot.val(); if (!data) return;
+                const data = snapshot.val(); 
+                if (!data) return;
                 if (!monPc.currentRemoteDescription) await monPc.setRemoteDescription(new RTCSessionDescription(data));
             });
 
@@ -856,40 +913,40 @@
                 if (!params.encodings) params.encodings = [{}];
                 
                 params.encodings[0].maxBitrate = bitrate;
-                // เปลี่ยนเป็น balanced เพื่อรักษาสมดุลความลื่นและภาพชัด
-                params.encodings[0].degradationPreference = 'balanced';
+                // เน้นความชัด (maintain-resolution)
+                params.encodings[0].degradationPreference = 'maintain-resolution';
                 sender.setParameters(params).catch(e => console.log(e));
             }
         }
 
         function startUpdatingStats() {
-            lastBytes = 0;
-            lastTime = Date.now();
+            lastBytes = 0; 
+            lastTime = Date.now(); 
             sessionTotalBytes = 0;
-
             updateLiveResDisplay();
 
             statsInterval = setInterval(async () => {
                 let obsBytes = 0;
-
                 if (pc && pc.connectionState === 'connected') {
                     const s = await pc.getStats();
-                    s.forEach(r => { if (r.type === 'outbound-rtp' && r.kind === 'video') obsBytes += r.bytesSent; });
+                    s.forEach(r => { 
+                        if (r.type === 'outbound-rtp' && r.kind === 'video') obsBytes += r.bytesSent; 
+                    });
                 }
 
-                const now = Date.now();
-                const diffTime = now - lastTime;
+                const now = Date.now(); 
+                const diffTime = now - lastTime; 
                 let mainKbps = 0;
-
+                
                 if (diffTime > 0) {
                     if (obsBytes > 0 && lastBytes > 0) mainKbps = Math.round(((obsBytes - lastBytes) * 8) / diffTime);
                     const diffMain = (obsBytes > lastBytes) ? (obsBytes - lastBytes) : 0;
                     sessionTotalBytes += diffMain;
                 }
 
-                lastBytes = obsBytes;
+                lastBytes = obsBytes; 
                 lastTime = now;
-
+                
                 document.getElementById('realtime-bw').innerText = `${mainKbps} kbps`;
                 updateLiveResDisplay();
 
@@ -906,24 +963,17 @@
                     const currentFps = Math.round(settings.frameRate || document.getElementById('live-fps').value);
                     const dataUsage = (sessionTotalBytes / (1024 * 1024)).toFixed(1);
 
-                    const payload = {
-                        r: currentRes + "p",
-                        f: currentFps,
-                        k: mainKbps,
-                        b: batLevel,
-                        d: dataUsage
-                    };
+                    const payload = { r: currentRes + "p", f: currentFps, k: mainKbps, b: batLevel, d: dataUsage };
                     statsChannel.send(JSON.stringify(payload));
                 }
-
             }, 1000);
         }
 
         function updateLiveResDisplay() {
             if (videoTrack) {
                 const settings = videoTrack.getSettings();
-                const w = settings.width || 0;
-                const h = settings.height || 0;
+                const w = settings.width || 0; 
+                const h = settings.height || 0; 
                 const f = Math.round(settings.frameRate || 0);
                 const el = document.getElementById('live-res-text');
                 if (el) el.innerText = `${w}×${h} ${f}fps`;
@@ -935,22 +985,60 @@
             const capabilities = videoTrack.getCapabilities();
             if (capabilities.zoom) {
                 const slider = document.getElementById('zoom-slider');
-                slider.min = capabilities.zoom.min; slider.max = capabilities.zoom.max; slider.step = capabilities.zoom.step; slider.value = capabilities.zoom.min;
+                slider.min = capabilities.zoom.min; 
+                slider.max = capabilities.zoom.max; 
+                slider.step = capabilities.zoom.step; 
+                slider.value = capabilities.zoom.min;
                 document.getElementById('zoom-container').classList.remove('hidden');
-            } else { document.getElementById('zoom-container').classList.add('hidden'); }
+            } else { 
+                document.getElementById('zoom-container').classList.add('hidden'); 
+            }
         }
-        async function applyZoom(value) { if (videoTrack) { try { await videoTrack.applyConstraints({ advanced: [{ zoom: value }] }); } catch (e) { } } }
+        
+        async function applyZoom(value) { 
+            if (videoTrack) { 
+                try { 
+                    await videoTrack.applyConstraints({ advanced: [{ zoom: value }] }); 
+                } catch (e) { } 
+            } 
+        }
 
         function rotateUI() {
             isUIRotated = !isUIRotated;
             const ui = document.getElementById('overlay-controls');
-            if (isUIRotated) ui.classList.add('ui-rotate-90'); else ui.classList.remove('ui-rotate-90');
+            if (isUIRotated) {
+                ui.classList.add('ui-rotate-90'); 
+            } else {
+                ui.classList.remove('ui-rotate-90');
+            }
         }
 
-        async function toggleTorch() { if (!videoTrack) return; try { const c = videoTrack.getSettings().torch || false; await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); } catch (e) { } }
-        async function triggerAutoFocus() { if (!videoTrack) return; try { await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) { } }
-        function toggleGrid() { document.getElementById('grid-layer').classList.toggle('hidden'); }
-        function reconnectSignaling() { if (roomId) { stopStreaming(); setTimeout(startStreaming, 1000); } }
+        async function toggleTorch() { 
+            if (!videoTrack) return; 
+            try { 
+                const c = videoTrack.getSettings().torch || false; 
+                await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); 
+                document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); 
+            } catch (e) { } 
+        }
+        
+        async function triggerAutoFocus() { 
+            if (!videoTrack) return; 
+            try { 
+                await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); 
+            } catch (e) { } 
+        }
+        
+        function toggleGrid() { 
+            document.getElementById('grid-layer').classList.toggle('hidden'); 
+        }
+        
+        function reconnectSignaling() { 
+            if (roomId) { 
+                stopStreaming(); 
+                setTimeout(startStreaming, 1000); 
+            } 
+        }
 
         async function switchCamera(deviceId, forceRes, forceFps) {
             if (!myStream) return;
@@ -961,23 +1049,24 @@
                 myStream.getVideoTracks().forEach(t => t.stop());
 
                 let videoConstraints = { width: { ideal: quality * 1.777 }, height: { ideal: quality }, frameRate: { ideal: fpsVal }, resizeMode: "none" };
-                if (deviceId) {
-                    videoConstraints.deviceId = { exact: deviceId };
-                } else if (videoTrack && videoTrack.getSettings().deviceId) {
-                    videoConstraints.deviceId = { exact: videoTrack.getSettings().deviceId };
-                } else {
-                    videoConstraints.facingMode = 'environment';
+                
+                if (deviceId) { 
+                    videoConstraints.deviceId = { exact: deviceId }; 
+                } else if (videoTrack && videoTrack.getSettings().deviceId) { 
+                    videoConstraints.deviceId = { exact: videoTrack.getSettings().deviceId }; 
+                } else { 
+                    videoConstraints.facingMode = 'environment'; 
                 }
 
                 let newStream;
-                try {
-                    newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
+                try { 
+                    newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints }); 
                 } catch(err) {
-                    try {
-                        delete videoConstraints.resizeMode;
-                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
-                    } catch(err2) {
-                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: true });
+                    try { 
+                        delete videoConstraints.resizeMode; 
+                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints }); 
+                    } catch(err2) { 
+                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: true }); 
                     }
                 }
                 const newVideoTrack = newStream.getVideoTracks()[0];
@@ -988,21 +1077,21 @@
                 }
 
                 videoTrack = newVideoTrack;
-                videoTrack.contentHint = "motion";
+                videoTrack.contentHint = "detail";
 
                 let tracks = [newVideoTrack];
                 if (audioTrack) tracks.push(audioTrack);
                 myStream = new MediaStream(tracks);
 
                 document.getElementById('preview').srcObject = myStream;
-                checkZoomCapabilities();
+                checkZoomCapabilities(); 
                 updateLiveResDisplay();
+                
                 if (deviceId) {
                     document.getElementById('camera-select').value = deviceId;
-                    saveSettings();
+                    saveSettings(); 
                     document.getElementById('live-cam-select').value = "";
                 }
-
             } catch (e) { alert("Switch/Apply Settings failed: " + e); }
         }
 
@@ -1023,7 +1112,6 @@
                 }
 
                 audioTrack = newAudioTrack;
-                
                 const micBtn = document.getElementById('mic-btn');
                 audioTrack.enabled = micBtn.classList.contains('bg-green-500');
 
@@ -1032,44 +1120,55 @@
                 myStream = new MediaStream(tracks);
 
                 document.getElementById('preview').srcObject = myStream;
+                
                 if (deviceId) {
                     document.getElementById('audio-source').value = deviceId;
-                    saveSettings();
+                    saveSettings(); 
                     document.getElementById('live-mic-select').value = "";
                 }
-
             } catch (e) { alert("Switch Mic failed: " + e); }
         }
 
         async function startQRScanner() {
             document.getElementById('qr-overlay').classList.remove('hidden');
-            const video = document.getElementById('qr-video'); const canvas = document.getElementById('qr-canvas'); const ctx = canvas.getContext('2d');
+            const video = document.getElementById('qr-video'); 
+            const canvas = document.getElementById('qr-canvas'); 
+            const ctx = canvas.getContext('2d');
             qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = qrStream; video.play(); requestAnimationFrame(tick);
+            video.srcObject = qrStream; 
+            video.play(); 
+            requestAnimationFrame(tick);
+            
             function tick() {
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.height = video.videoHeight; canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight; 
+                    canvas.width = video.videoWidth;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
                     if (code && code.data.length >= 6) {
                         document.getElementById('room-id').value = code.data.replace(/\D/g, '').substring(0, 6);
-                        stopQRScanner();
+                        stopQRScanner(); 
                         checkRoomConfig();
                     }
                 }
-                if (!document.getElementById('qr-overlay').classList.contains('hidden')) requestAnimationFrame(tick);
+                if (!document.getElementById('qr-overlay').classList.contains('hidden')) {
+                    requestAnimationFrame(tick);
+                }
             }
         }
-        function stopQRScanner() { document.getElementById('qr-overlay').classList.add('hidden'); if (qrStream) qrStream.getTracks().forEach(t => t.stop()); }
+        
+        function stopQRScanner() { 
+            document.getElementById('qr-overlay').classList.add('hidden'); 
+            if (qrStream) qrStream.getTracks().forEach(t => t.stop()); 
+        }
 
         // ==========================================
         // ฟังก์ชันไม้ตาย: Auto-Resume Camera สำหรับ iOS
+        // ป้องกันแอปพับแล้วกล้องดับ
         // ==========================================
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'visible') {
-                // เมื่อปัดแถบแจ้งเตือนกลับขึ้นไป หรือกลับมาหน้าแอป
                 if (videoTrack && videoTrack.readyState === 'ended') {
-                    // ถ้า iPad ตัดไฟกล้องไปแล้ว ให้สั่งสลับกล้องใหม่ทันทีเพื่อเปิดไฟกล้อง
                     const devId = document.getElementById('camera-select').value;
                     document.getElementById('status-txt').innerText = "RESUMING CAMERA...";
                     document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-yellow-400 animate-pulse";
