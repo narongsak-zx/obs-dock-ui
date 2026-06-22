@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V3.0 Pro UI</title>
+    <title>OBSCam Sender V3.1 Pro UI (Full)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -105,17 +105,21 @@
                 transform: translateY(-50%);
                 flex-direction: column;
             }
+
             .live-hud {
                 top: 1.5rem;
                 left: 1.5rem;
             }
+
             .live-tools {
                 bottom: 1.5rem;
                 left: 1.5rem;
                 flex-direction: row;
             }
+
             .zoom-wrapper {
-                right: 110px;
+                /* ขยับออกมาเป็น 160px เพื่อไม่ให้ทับปุ่มแดงใน Dock */
+                right: 160px;
                 top: 50%;
                 transform: translateY(-50%);
             }
@@ -133,15 +137,18 @@
                 justify-content: space-around;
                 padding: 1rem;
             }
+
             .live-hud {
                 top: 3.5rem;
                 left: 1rem;
             }
+
             .live-tools {
                 top: 3.5rem;
                 right: 1rem;
                 flex-direction: column;
             }
+
             .zoom-wrapper {
                 right: 1rem;
                 top: 50%;
@@ -240,7 +247,8 @@
 
 <body>
     <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
-        <button onclick="toggleSettingsModal(true)" class="absolute top-4 right-4 bg-gray-800 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-xs font-bold border border-gray-700">
+        <button onclick="toggleSettingsModal(true)"
+            class="absolute top-4 right-4 bg-gray-800 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-xs font-bold border border-gray-700">
             <i class="fas fa-cog mr-1"></i> SETTINGS
         </button>
 
@@ -255,16 +263,22 @@
                 <div class="flex gap-2">
                     <input type="tel" id="room-id" placeholder="######" maxlength="6" onkeyup="checkRoomConfig()"
                         class="w-full bg-black border border-gray-700 p-3 rounded-xl text-center text-4xl font-mono text-green-400 font-bold outline-none placeholder-gray-800 tracking-widest">
-                    <button onclick="startQRScanner()" class="bg-gray-800 w-16 rounded-xl flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition"><i class="fas fa-qrcode text-2xl"></i></button>
+                    <button onclick="startQRScanner()"
+                        class="bg-gray-800 w-16 rounded-xl flex items-center justify-center text-blue-400 hover:bg-gray-700 active:scale-95 transition">
+                        <i class="fas fa-qrcode text-2xl"></i>
+                    </button>
                 </div>
                 <div id="setup-room-name" class="hidden mt-2 text-center">
-                    <span class="text-green-400 text-sm font-bold"><i class="fas fa-check-circle mr-1"></i><span id="setup-room-name-text"></span></span>
+                    <span class="text-green-400 text-sm font-bold">
+                        <i class="fas fa-check-circle mr-1"></i><span id="setup-room-name-text"></span>
+                    </span>
                 </div>
             </div>
 
             <div class="bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
                 <label class="text-[10px] text-blue-300 font-bold uppercase block mb-1">Send To (Slot)</label>
-                <select id="cam-index" class="w-full bg-black text-white p-3 rounded-xl text-sm border border-blue-500/50 outline-none font-bold">
+                <select id="cam-index"
+                    class="w-full bg-black text-white p-3 rounded-xl text-sm border border-blue-500/50 outline-none font-bold">
                     <option value="1">CAMERA 1</option>
                     <option value="2">CAMERA 2</option>
                     <option value="3">CAMERA 3</option>
@@ -272,7 +286,8 @@
                 </select>
             </div>
 
-            <button onclick="startStreaming()" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] active:scale-95 transition-transform text-white mb-4 mt-4">
+            <button onclick="startStreaming()"
+                class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold text-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] active:scale-95 transition-transform text-white mb-4 mt-4">
                 START STREAMING
             </button>
         </div>
@@ -281,26 +296,30 @@
     <div id="settings-ui" class="settings-modal overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-white"><i class="fas fa-sliders-h mr-2"></i> Settings</h2>
-            <button onclick="toggleSettingsModal(false)" class="text-gray-400 hover:text-white text-lg"><i class="fas fa-times"></i></button>
+            <button onclick="toggleSettingsModal(false)" class="text-gray-400 hover:text-white text-lg"><i
+                    class="fas fa-times"></i></button>
         </div>
 
         <div class="space-y-4 max-w-sm w-full mx-auto pb-8">
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Select Camera</label>
-                <select id="camera-select" class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none">
+                <select id="camera-select"
+                    class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none">
                     <option value="">Default (Rear/Auto)</option>
                 </select>
             </div>
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Select Audio Input (Mic)</label>
-                <select id="audio-source" class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none">
+                <select id="audio-source"
+                    class="w-full bg-black text-white p-3 rounded-lg text-sm border border-gray-700 outline-none">
                     <option value="">Default (Auto)</option>
                 </select>
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Res</label>
-                    <select id="res" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
+                    <select id="res"
+                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
                         <option value="1080" selected>1080p</option>
                         <option value="720">720p</option>
                         <option value="480">480p</option>
@@ -308,7 +327,8 @@
                 </div>
                 <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">FPS</label>
-                    <select id="fps" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
+                    <select id="fps"
+                        class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
                         <option value="30" selected>30</option>
                         <option value="60">60</option>
                     </select>
@@ -316,7 +336,9 @@
             </div>
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate</label>
-                <select id="bitrate" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none" onchange="checkCustomBitrate(this)">
+                <select id="bitrate"
+                    class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none"
+                    onchange="checkCustomBitrate(this)">
                     <option value="2000">2.0 M</option>
                     <option value="2500">2.5 M</option>
                     <option value="3000">3.0 M</option>
@@ -329,65 +351,96 @@
             </div>
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Audio Start State</label>
-                <select id="audio-enable" class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
+                <select id="audio-enable"
+                    class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
                     <option value="false">Mute on Start</option>
                     <option value="true" selected>Unmute on Start</option>
                 </select>
             </div>
-            <button onclick="toggleSettingsModal(false)" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold text-white mt-4">DONE</button>
+            <button onclick="toggleSettingsModal(false)"
+                class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold text-white mt-4">DONE</button>
         </div>
     </div>
 
     <div id="live-ui" class="hidden absolute inset-0 bg-black z-0" onclick="toggleUI(event)">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
 
-        <div id="grid-layer" class="grid-lines hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none z-10 opacity-50">
-            <div class="border border-white/30"></div><div class="border border-white/30"></div><div class="border border-white/30"></div>
-            <div class="border border-white/30"></div><div class="border border-white/30"></div><div class="border border-white/30"></div>
-            <div class="border border-white/30"></div><div class="border border-white/30"></div><div class="border border-white/30"></div>
+        <div id="grid-layer"
+            class="grid-lines hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none z-10 opacity-50">
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
+            <div class="border border-white/30"></div>
         </div>
 
         <div id="overlay-controls" class="absolute inset-0 pointer-events-none fade-ui z-20">
-            
+
             <div class="live-hud">
-                <div class="bg-black/60 px-3 py-2 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2 pointer-events-auto shadow-lg w-fit">
+                <div
+                    class="bg-black/60 px-3 py-2 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2 pointer-events-auto shadow-lg w-fit">
                     <div id="status-dot" class="w-3 h-3 rounded-full bg-yellow-400 animate-pulse"></div>
                     <span id="status-txt" class="text-xs text-white font-bold tracking-wide">CONNECTING...</span>
                 </div>
                 <div class="flex gap-2 text-[10px] font-mono pointer-events-auto">
-                    <span id="realtime-bw" class="bg-black/50 px-2 py-1 rounded-md text-green-400 backdrop-blur-md">0 kbps</span>
-                    <span id="battery-stat" class="bg-black/50 px-2 py-1 rounded-md text-yellow-400 backdrop-blur-md"><i class="fas fa-bolt"></i> --%</span>
-                    <span class="bg-black/50 px-2 py-1 rounded-md text-white backdrop-blur-md" id="room-info">R: ----</span>
+                    <span id="realtime-bw"
+                        class="bg-black/50 px-2 py-1 rounded-md text-green-400 backdrop-blur-md">0 kbps</span>
+                    <span id="battery-stat"
+                        class="bg-black/50 px-2 py-1 rounded-md text-yellow-400 backdrop-blur-md"><i
+                            class="fas fa-bolt"></i> --%</span>
+                    <span class="bg-black/50 px-2 py-1 rounded-md text-white backdrop-blur-md" id="room-info">R:
+                        ----</span>
                 </div>
-                <div class="bg-black/50 px-2 py-1 rounded-md text-[10px] text-cyan-400 font-mono w-fit flex items-center gap-1 backdrop-blur-md pointer-events-auto">
+                <div
+                    class="bg-black/50 px-2 py-1 rounded-md text-[10px] text-cyan-400 font-mono w-fit flex items-center gap-1 backdrop-blur-md pointer-events-auto">
                     <i class="fas fa-video"></i><span id="live-res-text">-- × -- --fps</span>
                 </div>
             </div>
 
             <div class="live-tools">
-                <button onclick="toggleMic()" id="mic-btn" class="w-10 h-10 rounded-full bg-green-500/90 backdrop-blur text-white shadow-lg active:scale-90 transition"><i class="fas fa-microphone"></i></button>
-                <button onclick="toggleCinematicBlur()" id="cinematic-btn" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur text-white shadow-lg border border-white/10 active:scale-90 transition"><i class="fas fa-user-circle"></i></button>
-                <button onclick="toggleTorch()" id="torch-btn" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur text-white shadow-lg border border-white/10 active:scale-90 transition"><i class="fas fa-bolt"></i></button>
-                <button onclick="toggleGrid()" class="w-10 h-10 rounded-full bg-black/60 backdrop-blur text-white shadow-lg border border-white/10 active:scale-90 transition"><i class="fas fa-border-all"></i></button>
+                <button onclick="toggleMic()" id="mic-btn"
+                    class="w-10 h-10 rounded-full bg-green-500/90 backdrop-blur text-white shadow-lg active:scale-90 transition"><i
+                        class="fas fa-microphone"></i></button>
+                <button onclick="toggleCinematicBlur()" id="cinematic-btn"
+                    class="w-10 h-10 rounded-full bg-black/60 backdrop-blur text-white shadow-lg border border-white/10 active:scale-90 transition"><i
+                        class="fas fa-user-circle"></i></button>
+                <button onclick="toggleTorch()" id="torch-btn"
+                    class="w-10 h-10 rounded-full bg-black/60 backdrop-blur text-white shadow-lg border border-white/10 active:scale-90 transition"><i
+                        class="fas fa-bolt"></i></button>
+                <button onclick="toggleGrid()"
+                    class="w-10 h-10 rounded-full bg-black/60 backdrop-blur text-white shadow-lg border border-white/10 active:scale-90 transition"><i
+                        class="fas fa-border-all"></i></button>
             </div>
 
             <div class="live-dock">
-                <button onclick="reconnectSignaling()" class="w-12 h-12 rounded-full bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center text-white transition active:scale-90 shadow" title="Reset Signal">
-                    <i class="fas fa-sync text-lg"></i>
+                <button onclick="reconnectSignaling()"
+                    class="w-12 h-12 rounded-full bg-gray-800/80 hover:bg-gray-700 flex flex-col items-center justify-center text-white transition active:scale-90 shadow"
+                    title="Reset Signal">
+                    <i class="fas fa-satellite-dish text-sm mb-0.5"></i>
+                    <span class="text-[7px] font-bold uppercase tracking-wider">Reset</span>
                 </button>
-                
-                <button onclick="stopStreaming()" class="w-16 h-16 rounded-full bg-red-600 border-[3px] border-white/40 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)] active:scale-90 transition">
+
+                <button onclick="stopStreaming()"
+                    class="w-16 h-16 rounded-full bg-red-600 border-[3px] border-white/40 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)] active:scale-90 transition">
                     <div class="w-6 h-6 bg-white rounded-sm"></div>
                 </button>
 
-                <button onclick="openLiveSettings()" class="w-12 h-12 rounded-full bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center text-white transition active:scale-90 shadow" title="Settings">
-                    <i class="fas fa-sliders-h text-lg"></i>
+                <button onclick="openLiveSettings()"
+                    class="w-12 h-12 rounded-full bg-gray-800/80 hover:bg-gray-700 flex flex-col items-center justify-center text-white transition active:scale-90 shadow"
+                    title="Settings">
+                    <i class="fas fa-sliders-h text-sm mb-0.5"></i>
+                    <span class="text-[7px] font-bold uppercase tracking-wider">Setup</span>
                 </button>
             </div>
 
             <div id="zoom-container" class="hidden zoom-wrapper pointer-events-auto">
                 <i class="fas fa-plus text-[10px] text-white mb-2"></i>
-                <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1" oninput="applyZoom(this.value)" style="height: 120px; width: 6px; appearance: slider-vertical;">
+                <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1"
+                    oninput="applyZoom(this.value)" style="height: 120px; width: 6px; appearance: slider-vertical;">
                 <i class="fas fa-minus text-[10px] text-white mt-2"></i>
             </div>
         </div>
@@ -398,27 +451,32 @@
     <div id="live-sheet" class="live-sheet flex flex-col gap-4">
         <div class="w-12 h-1 bg-gray-700 rounded-full mx-auto mb-2"></div>
         <h3 class="text-white font-bold text-center text-sm mb-2">Live Camera Settings</h3>
-        
+
         <div class="space-y-3 max-w-sm mx-auto w-full">
-            <select id="live-cam-select" onchange="switchCamera(this.value)" class="w-full bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none">
+            <select id="live-cam-select" onchange="switchCamera(this.value)"
+                class="w-full bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none">
                 <option value="">Change Lens / Camera...</option>
             </select>
 
-            <select id="live-mic-select" onchange="switchMic(this.value)" class="w-full bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none">
+            <select id="live-mic-select" onchange="switchMic(this.value)"
+                class="w-full bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none">
                 <option value="">Change Microphone...</option>
             </select>
 
             <div class="grid grid-cols-3 gap-2">
-                <select id="live-res" onchange="applyLiveSettings()" class="bg-gray-900 text-cyan-400 text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
+                <select id="live-res" onchange="applyLiveSettings()"
+                    class="bg-gray-900 text-cyan-400 text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
                     <option value="1080">1080p</option>
                     <option value="720">720p</option>
                     <option value="480">480p</option>
                 </select>
-                <select id="live-fps" onchange="applyLiveSettings()" class="bg-gray-900 text-cyan-400 text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
+                <select id="live-fps" onchange="applyLiveSettings()"
+                    class="bg-gray-900 text-cyan-400 text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
                     <option value="60">60 FPS</option>
                     <option value="30">30 FPS</option>
                 </select>
-                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)" class="bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
+                <select id="live-bitrate" onchange="updateLiveBitrate(this.value)"
+                    class="bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
                     <option value="2000">2.0 M</option>
                     <option value="3000">3.0 M</option>
                     <option value="6000">6.0 M</option>
@@ -426,35 +484,39 @@
                     <option value="10000">10.0 M</option>
                 </select>
             </div>
-            
-            <button onclick="closeLiveSettings()" class="w-full mt-2 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl text-white text-xs font-bold transition">Close</button>
+
+            <button onclick="closeLiveSettings()"
+                class="w-full mt-2 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl text-white text-xs font-bold transition">Close</button>
         </div>
     </div>
 
     <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center">
         <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div class="w-64 h-64 border-4 border-blue-500 rounded-3xl relative shadow-[0_0_100px_rgba(59,130,246,0.5)]"></div>
+            <div
+                class="w-64 h-64 border-4 border-blue-500 rounded-3xl relative shadow-[0_0_100px_rgba(59,130,246,0.5)]">
+            </div>
         </div>
-        <button onclick="stopQRScanner()" class="absolute bottom-10 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20 text-white">CANCEL</button>
+        <button onclick="stopQRScanner()"
+            class="absolute bottom-10 bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg z-20 text-white">CANCEL</button>
         <canvas id="qr-canvas" hidden></canvas>
     </div>
 
     <script>
-        const firebaseConfig = { 
-            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ", 
-            authDomain: "obscam-p2p.firebaseapp.com", 
-            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app", 
-            projectId: "obscam-p2p", 
-            appId: "1:531335072084:web:dc373db6b66581a63160c1" 
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
+            authDomain: "obscam-p2p.firebaseapp.com",
+            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "obscam-p2p",
+            appId: "1:531335072084:web:dc373db6b66581a63160c1"
         };
 
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-        
+
         const db = firebase.database();
-        
+
         const rtcConfig = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -482,15 +544,15 @@
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
 
-        initDeviceSelection().then(() => { 
-            loadSettings(); 
+        initDeviceSelection().then(() => {
+            loadSettings();
         });
 
         async function initDeviceSelection() {
             try {
                 const tmpStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                
+
                 tmpStream.getTracks().forEach(track => track.stop());
 
                 const videoSelect = document.getElementById('camera-select');
@@ -505,20 +567,20 @@
 
                 let vCount = 1;
                 let aCount = 1;
-                
+
                 devices.forEach(device => {
                     if (device.kind === 'videoinput') {
                         const option = new Option(device.label || `Camera ${vCount++}`, device.deviceId);
-                        videoSelect.appendChild(option); 
+                        videoSelect.appendChild(option);
                         liveSelect.appendChild(option.cloneNode(true));
                     } else if (device.kind === 'audioinput') {
                         const option = new Option(device.label || `Microphone ${aCount++}`, device.deviceId);
-                        audioSelect.appendChild(option); 
+                        audioSelect.appendChild(option);
                         liveMicSelect.appendChild(option.cloneNode(true));
                     }
                 });
-            } catch (e) { 
-                console.log("Permission Error", e); 
+            } catch (e) {
+                console.log("Permission Error", e);
             }
         }
 
@@ -528,7 +590,7 @@
         function toggleSettingsModal(show) {
             const modal = document.getElementById('settings-ui');
             if (show) {
-                modal.classList.add('active'); 
+                modal.classList.add('active');
             } else {
                 modal.classList.remove('active');
             }
@@ -553,14 +615,14 @@
         // ============================
 
         function loadSettings() {
-            if (roomFromUrl) { 
-                document.getElementById('room-id').value = roomFromUrl; 
-                checkRoomConfig(); 
-            } else if (localStorage.getItem('obs_room_id')) { 
-                document.getElementById('room-id').value = localStorage.getItem('obs_room_id'); 
-                checkRoomConfig(); 
+            if (roomFromUrl) {
+                document.getElementById('room-id').value = roomFromUrl;
+                checkRoomConfig();
+            } else if (localStorage.getItem('obs_room_id')) {
+                document.getElementById('room-id').value = localStorage.getItem('obs_room_id');
+                checkRoomConfig();
             }
-            
+
             if (localStorage.getItem('obs_cam_index')) {
                 document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
             }
@@ -584,8 +646,8 @@
                     customBitrateVal = parseInt(localStorage.getItem('obs_custom_bitrate'));
                     sel.options[sel.options.length - 1].text = `Custom (${customBitrateVal})`;
                     sel.value = 'custom';
-                } else { 
-                    sel.value = b; 
+                } else {
+                    sel.value = b;
                 }
             }
         }
@@ -602,14 +664,14 @@
                         const sel = document.getElementById('cam-index');
                         const currentVal = sel.value;
                         sel.innerHTML = '';
-                        
+
                         for (let i = 1; i <= currentMaxCams; i++) {
                             const opt = document.createElement('option');
-                            opt.value = i; 
+                            opt.value = i;
                             opt.text = `CAMERA ${i}`;
                             sel.appendChild(opt);
                         }
-                        
+
                         if (currentVal <= currentMaxCams) {
                             sel.value = currentVal;
                         }
@@ -620,16 +682,16 @@
                                 setupNameText.innerText = currentRoomName;
                                 setupNameDiv.classList.remove('hidden');
                             } else {
-                                currentRoomName = ''; 
+                                currentRoomName = '';
                                 setupNameDiv.classList.add('hidden');
                             }
                         });
-                    } else { 
-                        setupNameDiv.classList.add('hidden'); 
+                    } else {
+                        setupNameDiv.classList.add('hidden');
                     }
                 });
-            } else { 
-                setupNameDiv.classList.add('hidden'); 
+            } else {
+                setupNameDiv.classList.add('hidden');
             }
         }
 
@@ -652,21 +714,21 @@
                 if (val && !isNaN(val)) {
                     customBitrateVal = parseInt(val);
                     el.options[el.options.length - 1].text = `Custom (${val})`;
-                } else { 
-                    el.value = "6000"; 
+                } else {
+                    el.value = "6000";
                 }
             }
         }
 
         async function startStreaming() {
-            if (myStream) { 
-                myStream.getTracks().forEach(track => track.stop()); 
-                myStream = null; 
+            if (myStream) {
+                myStream.getTracks().forEach(track => track.stop());
+                myStream = null;
             }
 
             saveSettings();
             roomId = document.getElementById('room-id').value;
-            
+
             if (roomId.length < 6) {
                 return alert('Invalid Room ID');
             }
@@ -675,15 +737,15 @@
             document.getElementById('status-txt').innerText = "CHECKING...";
 
             const roomSnap = await db.ref(`OBSCam_rooms/${roomId}/active`).get();
-            if (!roomSnap.exists()) { 
-                alert(`Room ${roomId} not found!`); 
-                return; 
+            if (!roomSnap.exists()) {
+                alert(`Room ${roomId} not found!`);
+                return;
             }
 
             targetCamIndex = document.getElementById('cam-index').value;
             if (parseInt(targetCamIndex) > currentMaxCams) {
                 alert(`Error: This room only supports ${currentMaxCams} cameras. Please refresh or select a lower slot.`);
-                checkRoomConfig(); 
+                checkRoomConfig();
                 return;
             }
 
@@ -701,64 +763,64 @@
 
             const micBtn = document.getElementById('mic-btn');
             if (startUnmuted) {
-                micBtn.classList.remove('bg-red-500/90', 'bg-black/60'); 
-                micBtn.classList.add('bg-green-500/90'); 
+                micBtn.classList.remove('bg-red-500/90', 'bg-black/60');
+                micBtn.classList.add('bg-green-500/90');
                 micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
             } else {
-                micBtn.classList.remove('bg-green-500/90', 'bg-black/60'); 
-                micBtn.classList.add('bg-red-500/90'); 
+                micBtn.classList.remove('bg-green-500/90', 'bg-black/60');
+                micBtn.classList.add('bg-red-500/90');
                 micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
             }
 
             const currentBitrateSet = document.getElementById('bitrate').value;
             const liveBitSel = document.getElementById('live-bitrate');
-            
+
             if (currentBitrateSet === 'custom') {
                 let existingOpt = Array.from(liveBitSel.options).find(o => o.value === customBitrateVal.toString());
-                if (!existingOpt) { 
-                    let opt = new Option(`${(customBitrateVal/1000).toFixed(1)} M`, customBitrateVal); 
-                    liveBitSel.add(opt); 
+                if (!existingOpt) {
+                    let opt = new Option(`${(customBitrateVal / 1000).toFixed(1)} M`, customBitrateVal);
+                    liveBitSel.add(opt);
                 }
                 liveBitSel.value = customBitrateVal;
-            } else { 
-                liveBitSel.value = currentBitrateSet; 
+            } else {
+                liveBitSel.value = currentBitrateSet;
             }
 
-            let videoConstraints = { 
-                width: { ideal: quality * 1.777 }, 
-                height: { ideal: quality }, 
-                frameRate: { ideal: fpsVal }, 
-                resizeMode: "none" 
+            let videoConstraints = {
+                width: { ideal: quality * 1.777 },
+                height: { ideal: quality },
+                frameRate: { ideal: fpsVal },
+                resizeMode: "none"
             };
-            
-            if (selectedCamId) { 
-                videoConstraints.deviceId = { exact: selectedCamId }; 
-            } else { 
-                videoConstraints.facingMode = 'environment'; 
+
+            if (selectedCamId) {
+                videoConstraints.deviceId = { exact: selectedCamId };
+            } else {
+                videoConstraints.facingMode = 'environment';
             }
-            
+
             let audioConstraints = true;
-            if (selectedAudioId) { 
-                audioConstraints = { deviceId: { exact: selectedAudioId } }; 
+            if (selectedAudioId) {
+                audioConstraints = { deviceId: { exact: selectedAudioId } };
             }
 
             try {
-                try { 
-                    myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); 
+                try {
+                    myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints });
                 } catch (err) {
-                    try { 
-                        delete videoConstraints.resizeMode; 
-                        myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); 
-                    } catch(err2) { 
-                        delete videoConstraints.facingMode; 
-                        delete videoConstraints.deviceId; 
-                        myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints }); 
+                    try {
+                        delete videoConstraints.resizeMode;
+                        myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints });
+                    } catch (err2) {
+                        delete videoConstraints.facingMode;
+                        delete videoConstraints.deviceId;
+                        myStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints, video: videoConstraints });
                     }
                 }
 
                 videoTrack = myStream.getVideoTracks()[0];
                 audioTrack = myStream.getAudioTracks()[0];
-                
+
                 if (videoTrack) {
                     videoTrack.contentHint = "detail";
                 }
@@ -769,7 +831,7 @@
                 document.getElementById('preview').srcObject = myStream;
                 document.getElementById('setup').classList.add('hidden');
                 document.getElementById('live-ui').classList.remove('hidden');
-                
+
                 checkZoomCapabilities();
 
                 document.getElementById('cinematic-btn').classList.remove('bg-pink-500/90');
@@ -778,39 +840,39 @@
                 connectOBS(roomId, targetCamIndex);
                 startUpdatingStats();
 
-            } catch (e) { 
-                alert('Camera/Mic Error: ' + e.message); 
+            } catch (e) {
+                alert('Camera/Mic Error: ' + e.message);
             }
         }
 
         async function toggleCinematicBlur() {
             if (!videoTrack) return;
-            
+
             try {
                 const capabilities = navigator.mediaDevices.getSupportedConstraints();
-                
+
                 if (!capabilities.backgroundBlur) {
                     alert("ระบบ iOS/iPadOS ปิดกั้นไม่ให้ควบคุมเอฟเฟกต์ภาพยนตร์ผ่านโค้ดโดยตรงครับ 😭\n\nวิธีเปิดการใช้งาน (เนียนกว่าและไม่กินแบต):\n1. ปัดหน้าจอจากมุมขวาบนลงมาเพื่อเปิด Control Center\n2. เลือก Video Effects (เอฟเฟกต์วิดีโอ)\n3. แตะเปิด Portrait (ภาพถ่ายบุคคล)");
                     return;
                 }
-                
+
                 const currentSettings = videoTrack.getSettings();
                 const isBlurEnabled = currentSettings.backgroundBlur || false;
-                
-                await videoTrack.applyConstraints({ 
-                    advanced: [{ backgroundBlur: !isBlurEnabled }] 
+
+                await videoTrack.applyConstraints({
+                    advanced: [{ backgroundBlur: !isBlurEnabled }]
                 });
-                
+
                 const btn = document.getElementById('cinematic-btn');
-                if(!isBlurEnabled) {
-                    btn.classList.remove('bg-black/60'); 
+                if (!isBlurEnabled) {
+                    btn.classList.remove('bg-black/60');
                     btn.classList.add('bg-pink-500/90');
                 } else {
-                    btn.classList.remove('bg-pink-500/90'); 
+                    btn.classList.remove('bg-pink-500/90');
                     btn.classList.add('bg-black/60');
                 }
-            } catch (e) { 
-                alert("เกิดข้อผิดพลาดในการเปิดโหมดภาพยนตร์: " + e.message); 
+            } catch (e) {
+                alert("เกิดข้อผิดพลาดในการเปิดโหมดภาพยนตร์: " + e.message);
             }
         }
 
@@ -818,15 +880,15 @@
             if (audioTrack) {
                 audioTrack.enabled = !audioTrack.enabled;
                 const micBtn = document.getElementById('mic-btn');
-                
-                if (audioTrack.enabled) { 
-                    micBtn.classList.remove('bg-red-500/90'); 
-                    micBtn.classList.add('bg-green-500/90'); 
-                    micBtn.innerHTML = '<i class="fas fa-microphone"></i>'; 
-                } else { 
-                    micBtn.classList.remove('bg-green-500/90'); 
-                    micBtn.classList.add('bg-red-500/90'); 
-                    micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>'; 
+
+                if (audioTrack.enabled) {
+                    micBtn.classList.remove('bg-red-500/90');
+                    micBtn.classList.add('bg-green-500/90');
+                    micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                } else {
+                    micBtn.classList.remove('bg-green-500/90');
+                    micBtn.classList.add('bg-red-500/90');
+                    micBtn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
                 }
             }
         }
@@ -835,8 +897,8 @@
             if (!isNaN(val)) {
                 customBitrateVal = parseInt(val);
             }
-            if (pc) { 
-                setBitrate(pc, parseInt(val) * 1000); 
+            if (pc) {
+                setBitrate(pc, parseInt(val) * 1000);
             }
         }
 
@@ -844,10 +906,10 @@
             const res = parseInt(document.getElementById('live-res').value);
             const fps = parseInt(document.getElementById('live-fps').value);
             const devId = document.getElementById('live-cam-select').value;
-            
+
             document.getElementById('res').value = res;
             document.getElementById('fps').value = fps;
-            
+
             saveSettings();
             switchCamera(devId ? devId : undefined, res, fps);
         }
@@ -856,13 +918,19 @@
             if (myStream) {
                 myStream.getTracks().forEach(track => track.stop());
             }
-            
-            if (statsChannel) statsChannel.close();
-            if (pc) pc.close(); 
-            if (monPc) monPc.close();
-            
-            pc = null; 
-            monPc = null; 
+
+            if (statsChannel) {
+                statsChannel.close();
+            }
+            if (pc) {
+                pc.close();
+            }
+            if (monPc) {
+                monPc.close();
+            }
+
+            pc = null;
+            monPc = null;
             statsChannel = null;
             clearInterval(statsInterval);
 
@@ -873,79 +941,85 @@
 
             document.getElementById('live-ui').classList.add('hidden');
             document.getElementById('setup').classList.remove('hidden');
-            
+
             closeLiveSettings();
             sessionTotalBytes = 0;
         }
 
-        function getTargetBitrate() { 
-            return parseInt(document.getElementById('live-bitrate').value) || 6000; 
+        function getTargetBitrate() {
+            return parseInt(document.getElementById('live-bitrate').value) || 6000;
         }
 
         function setMediaBitrateSDP(sdp, bitrate) {
-            let lines = sdp.split('\n'); 
+            let lines = sdp.split('\n');
             let line = -1;
-            
-            for (let i = 0; i < lines.length; i++) { 
-                if (lines[i].indexOf('m=video') === 0) { 
-                    line = i; 
-                    break; 
-                } 
+
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].indexOf('m=video') === 0) {
+                    line = i;
+                    break;
+                }
             }
-            
-            if (line === -1) return sdp;
+
+            if (line === -1) {
+                return sdp;
+            }
             line++;
-            
-            while (line < lines.length && (lines[line].indexOf('i=') === 0 || lines[line].indexOf('c=') === 0)) { 
-                line++; 
+
+            while (line < lines.length && (lines[line].indexOf('i=') === 0 || lines[line].indexOf('c=') === 0)) {
+                line++;
             }
-            
-            if (line < lines.length && lines[line].indexOf('b=AS') === 0) { 
-                lines[line] = 'b=AS:' + bitrate; 
-            } else { 
-                lines.splice(line, 0, 'b=AS:' + bitrate); 
+
+            if (line < lines.length && lines[line].indexOf('b=AS') === 0) {
+                lines[line] = 'b=AS:' + bitrate;
+            } else {
+                lines.splice(line, 0, 'b=AS:' + bitrate);
             }
-            
+
             return lines.join('\n');
         }
 
         function preferCodec(sdp, codec) {
-            var sdpLines = sdp.split('\r\n'); 
+            var sdpLines = sdp.split('\r\n');
             var mLineIndex = -1;
-            
-            for (var i = 0; i < sdpLines.length; i++) { 
-                if (sdpLines[i].search('m=video') !== -1) { 
-                    mLineIndex = i; 
-                    break; 
-                } 
-            }
-            
-            if (mLineIndex === -1) return sdp;
-            
-            var codecPayload = null; 
-            var pattern = new RegExp(":(\\d+) " + codec + "/90000");
-            
-            for (var i = 0; i < sdpLines.length; i++) { 
-                var result = sdpLines[i].match(pattern); 
-                if (result) { 
-                    codecPayload = result[1]; 
-                    break; 
-                } 
-            }
-            
-            if (!codecPayload) return sdp;
-            
-            var mLine = sdpLines[mLineIndex]; 
-            var elements = mLine.split(' '); 
-            var newMLine = elements.slice(0, 3);
-            newMLine.push(codecPayload);
-            
-            for (var i = 3; i < elements.length; i++) { 
-                if (elements[i] !== codecPayload) {
-                    newMLine.push(elements[i]); 
+
+            for (var i = 0; i < sdpLines.length; i++) {
+                if (sdpLines[i].search('m=video') !== -1) {
+                    mLineIndex = i;
+                    break;
                 }
             }
-            
+
+            if (mLineIndex === -1) {
+                return sdp;
+            }
+
+            var codecPayload = null;
+            var pattern = new RegExp(":(\\d+) " + codec + "/90000");
+
+            for (var i = 0; i < sdpLines.length; i++) {
+                var result = sdpLines[i].match(pattern);
+                if (result) {
+                    codecPayload = result[1];
+                    break;
+                }
+            }
+
+            if (!codecPayload) {
+                return sdp;
+            }
+
+            var mLine = sdpLines[mLineIndex];
+            var elements = mLine.split(' ');
+            var newMLine = elements.slice(0, 3);
+            newMLine.push(codecPayload);
+
+            for (var i = 3; i < elements.length; i++) {
+                if (elements[i] !== codecPayload) {
+                    newMLine.push(elements[i]);
+                }
+            }
+
             sdpLines[mLineIndex] = newMLine.join(' ');
             return sdpLines.join('\r\n');
         }
@@ -953,23 +1027,23 @@
         async function connectOBS(rid, cIdx) {
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
             pc = new RTCPeerConnection(rtcConfig);
-            
+
             myStream.getTracks().forEach(track => pc.addTrack(track, myStream));
             connectMonitor(rid, cIdx);
 
             let pendingCandidates = [];
-            
+
             pc.onicecandidate = event => {
-                if (event.candidate) { 
-                    pendingCandidates.push({ 
-                        c: event.candidate.candidate, 
-                        m: event.candidate.sdpMid, 
-                        i: event.candidate.sdpMLineIndex 
-                    }); 
-                } else { 
-                    if (pendingCandidates.length > 0) { 
-                        roomRef.child('callerCandidates').set(pendingCandidates); 
-                    } 
+                if (event.candidate) {
+                    pendingCandidates.push({
+                        c: event.candidate.candidate,
+                        m: event.candidate.sdpMid,
+                        i: event.candidate.sdpMLineIndex
+                    });
+                } else {
+                    if (pendingCandidates.length > 0) {
+                        roomRef.child('callerCandidates').set(pendingCandidates);
+                    }
                 }
             };
 
@@ -981,14 +1055,14 @@
                 } else if (state === 'disconnected' || state === 'failed') {
                     document.getElementById('status-txt').innerText = 'RECONNECTING...';
                     document.getElementById('status-dot').className = 'w-3 h-3 rounded-full bg-yellow-400 animate-pulse';
-                    
+
                     if (state === 'failed') {
                         pc.restartIce();
                         pc.createOffer({ iceRestart: true }).then(async newOffer => {
                             let finalSDP = preferCodec(newOffer.sdp, 'H264');
                             finalSDP = setMediaBitrateSDP(finalSDP, 10000);
                             newOffer = new RTCSessionDescription({ type: 'offer', sdp: finalSDP });
-                            
+
                             await pc.setLocalDescription(newOffer);
                             await roomRef.child('offer').set({ sdp: newOffer.sdp, type: newOffer.type });
                         }).catch(e => console.error(e));
@@ -998,14 +1072,14 @@
 
             let offer = await pc.createOffer();
             let finalSDP = preferCodec(offer.sdp, 'H264');
-            finalSDP = setMediaBitrateSDP(finalSDP, 10000); 
+            finalSDP = setMediaBitrateSDP(finalSDP, 10000);
             offer = new RTCSessionDescription({ type: 'offer', sdp: finalSDP });
 
             await pc.setLocalDescription(offer);
             await roomRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
             roomRef.child('answer').on('value', async snapshot => {
-                const data = snapshot.val(); 
+                const data = snapshot.val();
                 if (!data) return;
                 if (!pc.currentRemoteDescription) {
                     await pc.setRemoteDescription(new RTCSessionDescription(data));
@@ -1015,14 +1089,14 @@
             roomRef.child('calleeCandidates').on('value', snapshot => {
                 const candidates = snapshot.val();
                 if (candidates && Array.isArray(candidates)) {
-                    candidates.forEach(c => { 
-                        if (c) { 
-                            pc.addIceCandidate(new RTCIceCandidate({ 
-                                candidate: c.c, 
-                                sdpMid: c.m, 
-                                sdpMLineIndex: c.i 
-                            })).catch(e => { }); 
-                        } 
+                    candidates.forEach(c => {
+                        if (c) {
+                            pc.addIceCandidate(new RTCIceCandidate({
+                                candidate: c.c,
+                                sdpMid: c.m,
+                                sdpMLineIndex: c.i
+                            })).catch(e => { });
+                        }
                     });
                 }
             });
@@ -1032,23 +1106,23 @@
 
         async function connectMonitor(rid, cIdx) {
             const monRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/mon`);
-            await monRef.child('answer').remove(); 
+            await monRef.child('answer').remove();
             await monRef.child('calleeCandidates').remove();
-            
+
             monPc = new RTCPeerConnection(rtcConfig);
             statsChannel = monPc.createDataChannel('stats');
 
             let pendingCandidates = [];
-            
+
             monPc.onicecandidate = event => {
-                if (event.candidate) { 
+                if (event.candidate) {
                     pendingCandidates.push({
-                        c: event.candidate.candidate, 
-                        m: event.candidate.sdpMid, 
+                        c: event.candidate.candidate,
+                        m: event.candidate.sdpMid,
                         i: event.candidate.sdpMLineIndex
-                    }); 
-                } else if (pendingCandidates.length > 0) { 
-                    monRef.child('callerCandidates').set(pendingCandidates); 
+                    });
+                } else if (pendingCandidates.length > 0) {
+                    monRef.child('callerCandidates').set(pendingCandidates);
                 }
             };
 
@@ -1057,7 +1131,7 @@
             await monRef.child('offer').set({ sdp: offer.sdp, type: offer.type });
 
             monRef.child('answer').on('value', async snapshot => {
-                const data = snapshot.val(); 
+                const data = snapshot.val();
                 if (!data) return;
                 if (!monPc.currentRemoteDescription) {
                     await monPc.setRemoteDescription(new RTCSessionDescription(data));
@@ -1067,13 +1141,13 @@
             monRef.child('calleeCandidates').on('value', snapshot => {
                 const candidates = snapshot.val();
                 if (candidates && Array.isArray(candidates)) {
-                    candidates.forEach(c => { 
+                    candidates.forEach(c => {
                         if (c) {
                             monPc.addIceCandidate(new RTCIceCandidate({
-                                candidate: c.c, 
-                                sdpMid: c.m, 
+                                candidate: c.c,
+                                sdpMid: c.m,
                                 sdpMLineIndex: c.i
-                            })).catch(e => {}); 
+                            })).catch(e => { });
                         }
                     });
                 }
@@ -1084,8 +1158,10 @@
             const sender = targetPC.getSenders().find(s => s.track.kind === 'video');
             if (sender && sender.getParameters) {
                 const params = sender.getParameters();
-                if (!params.encodings) params.encodings = [{}];
-                
+                if (!params.encodings) {
+                    params.encodings = [{}];
+                }
+
                 params.encodings[0].maxBitrate = bitrate;
                 params.encodings[0].degradationPreference = 'maintain-resolution';
                 sender.setParameters(params).catch(e => console.log(e));
@@ -1093,27 +1169,27 @@
         }
 
         function startUpdatingStats() {
-            lastBytes = 0; 
-            lastTime = Date.now(); 
+            lastBytes = 0;
+            lastTime = Date.now();
             sessionTotalBytes = 0;
             updateLiveResDisplay();
 
             statsInterval = setInterval(async () => {
                 let obsBytes = 0;
-                
+
                 if (pc && pc.connectionState === 'connected') {
                     const s = await pc.getStats();
-                    s.forEach(r => { 
+                    s.forEach(r => {
                         if (r.type === 'outbound-rtp' && r.kind === 'video') {
-                            obsBytes += r.bytesSent; 
+                            obsBytes += r.bytesSent;
                         }
                     });
                 }
 
-                const now = Date.now(); 
-                const diffTime = now - lastTime; 
+                const now = Date.now();
+                const diffTime = now - lastTime;
                 let mainKbps = 0;
-                
+
                 if (diffTime > 0) {
                     if (obsBytes > 0 && lastBytes > 0) {
                         mainKbps = Math.round(((obsBytes - lastBytes) * 8) / diffTime);
@@ -1122,9 +1198,9 @@
                     sessionTotalBytes += diffMain;
                 }
 
-                lastBytes = obsBytes; 
+                lastBytes = obsBytes;
                 lastTime = now;
-                
+
                 document.getElementById('realtime-bw').innerText = `${mainKbps} kbps`;
                 updateLiveResDisplay();
 
@@ -1140,13 +1216,13 @@
                     const currentRes = settings.height || document.getElementById('live-res').value;
                     const currentFps = Math.round(settings.frameRate || document.getElementById('live-fps').value);
                     const dataUsage = (sessionTotalBytes / (1024 * 1024)).toFixed(1);
-                    
-                    const payload = { 
-                        r: currentRes + "p", 
-                        f: currentFps, 
-                        k: mainKbps, 
-                        b: batLevel, 
-                        d: dataUsage 
+
+                    const payload = {
+                        r: currentRes + "p",
+                        f: currentFps,
+                        k: mainKbps,
+                        b: batLevel,
+                        d: dataUsage
                     };
                     statsChannel.send(JSON.stringify(payload));
                 }
@@ -1156,58 +1232,58 @@
         function updateLiveResDisplay() {
             if (videoTrack) {
                 const settings = videoTrack.getSettings();
-                const w = settings.width || 0; 
-                const h = settings.height || 0; 
+                const w = settings.width || 0;
+                const h = settings.height || 0;
                 const f = Math.round(settings.frameRate || 0);
                 const el = document.getElementById('live-res-text');
-                
+
                 if (el) {
                     el.innerText = `${w}×${h} ${f}fps`;
                 }
             }
         }
 
-        async function applyZoom(value) { 
-            if (videoTrack) { 
-                try { 
-                    await videoTrack.applyConstraints({ advanced: [{ zoom: value }] }); 
-                } catch (e) { } 
-            } 
+        async function applyZoom(value) {
+            if (videoTrack) {
+                try {
+                    await videoTrack.applyConstraints({ advanced: [{ zoom: value }] });
+                } catch (e) { }
+            }
         }
 
-        async function toggleTorch() { 
-            if (!videoTrack) return; 
-            try { 
-                const c = videoTrack.getSettings().torch || false; 
-                await videoTrack.applyConstraints({ advanced: [{ torch: !c }] }); 
-                document.getElementById('torch-btn').classList.toggle('bg-yellow-500'); 
-            } catch (e) { } 
+        async function toggleTorch() {
+            if (!videoTrack) return;
+            try {
+                const c = videoTrack.getSettings().torch || false;
+                await videoTrack.applyConstraints({ advanced: [{ torch: !c }] });
+                document.getElementById('torch-btn').classList.toggle('bg-yellow-500');
+            } catch (e) { }
         }
 
-        function toggleGrid() { 
-            document.getElementById('grid-layer').classList.toggle('hidden'); 
+        function toggleGrid() {
+            document.getElementById('grid-layer').classList.toggle('hidden');
         }
 
-        function reconnectSignaling() { 
-            if (roomId) { 
-                stopStreaming(); 
-                setTimeout(startStreaming, 1000); 
-            } 
+        function reconnectSignaling() {
+            if (roomId) {
+                stopStreaming();
+                setTimeout(startStreaming, 1000);
+            }
         }
 
         async function checkZoomCapabilities() {
             if (!videoTrack) return;
             const capabilities = videoTrack.getCapabilities();
-            
+
             if (capabilities.zoom) {
                 const slider = document.getElementById('zoom-slider');
-                slider.min = capabilities.zoom.min; 
-                slider.max = capabilities.zoom.max; 
-                slider.step = capabilities.zoom.step; 
+                slider.min = capabilities.zoom.min;
+                slider.max = capabilities.zoom.max;
+                slider.step = capabilities.zoom.step;
                 slider.value = capabilities.zoom.min;
                 document.getElementById('zoom-container').classList.remove('hidden');
-            } else { 
-                document.getElementById('zoom-container').classList.add('hidden'); 
+            } else {
+                document.getElementById('zoom-container').classList.add('hidden');
             }
         }
 
@@ -1219,65 +1295,70 @@
             try {
                 myStream.getVideoTracks().forEach(t => t.stop());
 
-                let videoConstraints = { 
-                    width: { ideal: quality * 1.777 }, 
-                    height: { ideal: quality }, 
-                    frameRate: { ideal: fpsVal }, 
-                    resizeMode: "none" 
+                let videoConstraints = {
+                    width: { ideal: quality * 1.777 },
+                    height: { ideal: quality },
+                    frameRate: { ideal: fpsVal },
+                    resizeMode: "none"
                 };
-                
-                if (deviceId) { 
-                    videoConstraints.deviceId = { exact: deviceId }; 
-                } else if (videoTrack && videoTrack.getSettings().deviceId) { 
-                    videoConstraints.deviceId = { exact: videoTrack.getSettings().deviceId }; 
-                } else { 
-                    videoConstraints.facingMode = 'environment'; 
+
+                if (deviceId) {
+                    videoConstraints.deviceId = { exact: deviceId };
+                } else if (videoTrack && videoTrack.getSettings().deviceId) {
+                    videoConstraints.deviceId = { exact: videoTrack.getSettings().deviceId };
+                } else {
+                    videoConstraints.facingMode = 'environment';
                 }
 
                 let newStream;
-                try { 
-                    newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints }); 
-                } catch(err) {
-                    try { 
-                        delete videoConstraints.resizeMode; 
-                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints }); 
-                    } catch(err2) { 
-                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: true }); 
+                try {
+                    newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
+                } catch (err) {
+                    try {
+                        delete videoConstraints.resizeMode;
+                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
+                    } catch (err2) {
+                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: true });
                     }
                 }
                 const newVideoTrack = newStream.getVideoTracks()[0];
 
                 if (pc) {
                     const sender = pc.getSenders().find(s => s.track.kind === 'video');
-                    if (sender) sender.replaceTrack(newVideoTrack);
+                    if (sender) {
+                        sender.replaceTrack(newVideoTrack);
+                    }
                 }
 
                 videoTrack = newVideoTrack;
                 videoTrack.contentHint = "detail";
 
                 let tracks = [newVideoTrack];
-                if (audioTrack) tracks.push(audioTrack);
+                if (audioTrack) {
+                    tracks.push(audioTrack);
+                }
                 myStream = new MediaStream(tracks);
 
                 document.getElementById('preview').srcObject = myStream;
-                
-                checkZoomCapabilities(); 
+                checkZoomCapabilities();
                 updateLiveResDisplay();
-                
+
                 if (deviceId) {
                     document.getElementById('camera-select').value = deviceId;
-                    saveSettings(); 
+                    saveSettings();
                 }
-            } catch (e) { 
-                alert("Switch/Apply Settings failed: " + e); 
+            } catch (e) {
+                alert("Switch/Apply Settings failed: " + e);
             }
         }
 
         async function switchMic(deviceId) {
             if (!myStream) return;
             try {
-                if (audioTrack) audioTrack.stop();
-                
+                if (audioTrack) {
+                    audioTrack.stop();
+                }
+
                 let audioConstraints = true;
                 if (deviceId) {
                     audioConstraints = { deviceId: { exact: deviceId } };
@@ -1288,7 +1369,9 @@
 
                 if (pc) {
                     const sender = pc.getSenders().find(s => s.track.kind === 'audio');
-                    if (sender) sender.replaceTrack(newAudioTrack);
+                    if (sender) {
+                        sender.replaceTrack(newAudioTrack);
+                    }
                 }
 
                 audioTrack = newAudioTrack;
@@ -1296,55 +1379,57 @@
                 audioTrack.enabled = micBtn.classList.contains('bg-green-500/90');
 
                 let tracks = [videoTrack];
-                if (audioTrack) tracks.push(audioTrack);
+                if (audioTrack) {
+                    tracks.push(audioTrack);
+                }
                 myStream = new MediaStream(tracks);
 
                 document.getElementById('preview').srcObject = myStream;
-                
-                if (deviceId) { 
-                    document.getElementById('audio-source').value = deviceId; 
-                    saveSettings(); 
+
+                if (deviceId) {
+                    document.getElementById('audio-source').value = deviceId;
+                    saveSettings();
                 }
-            } catch (e) { 
-                alert("Switch Mic failed: " + e); 
+            } catch (e) {
+                alert("Switch Mic failed: " + e);
             }
         }
 
         async function startQRScanner() {
             document.getElementById('qr-overlay').classList.remove('hidden');
-            const video = document.getElementById('qr-video'); 
-            const canvas = document.getElementById('qr-canvas'); 
+            const video = document.getElementById('qr-video');
+            const canvas = document.getElementById('qr-canvas');
             const ctx = canvas.getContext('2d');
-            
+
             qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            video.srcObject = qrStream; 
-            video.play(); 
+            video.srcObject = qrStream;
+            video.play();
             requestAnimationFrame(tick);
-            
+
             function tick() {
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.height = video.videoHeight; 
+                    canvas.height = video.videoHeight;
                     canvas.width = video.videoWidth;
                     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
+
                     const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-                    
+
                     if (code && code.data.length >= 6) {
                         document.getElementById('room-id').value = code.data.replace(/\D/g, '').substring(0, 6);
-                        stopQRScanner(); 
+                        stopQRScanner();
                         checkRoomConfig();
                     }
                 }
-                if (!document.getElementById('qr-overlay').classList.contains('hidden')) { 
-                    requestAnimationFrame(tick); 
+                if (!document.getElementById('qr-overlay').classList.contains('hidden')) {
+                    requestAnimationFrame(tick);
                 }
             }
         }
 
-        function stopQRScanner() { 
-            document.getElementById('qr-overlay').classList.add('hidden'); 
+        function stopQRScanner() {
+            document.getElementById('qr-overlay').classList.add('hidden');
             if (qrStream) {
-                qrStream.getTracks().forEach(t => t.stop()); 
+                qrStream.getTracks().forEach(t => t.stop());
             }
         }
 
@@ -1354,9 +1439,9 @@
                     const devId = document.getElementById('camera-select').value;
                     document.getElementById('status-txt').innerText = "RESUMING...";
                     document.getElementById('status-dot').className = "w-3 h-3 rounded-full bg-yellow-400 animate-pulse";
-                    
+
                     switchCamera(devId ? devId : undefined);
-                    
+
                     setTimeout(() => {
                         document.getElementById('status-txt').innerText = `CAM ${targetCamIndex}`;
                         document.getElementById('status-dot').className = "w-3 h-3 rounded-full bg-red-500 animate-pulse";
