@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- เพิ่ม Meta Tag บังคับแสดงผลแบบแอปพลิเคชันเต็มจอ -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>OBSCam Sender V2.5b</title>
@@ -23,7 +24,7 @@
         }
 
         #setup {
-            height: 100dvh; /* เปลี่ยนเป็น 100dvh แก้ปัญหาจอด้านล่างแหว่ง */
+            height: 100dvh;
             overflow-y: auto;
             position: relative;
             z-index: 50;
@@ -35,7 +36,7 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain; /* เปลี่ยนเป็น contain เพื่อไม่ให้ภาพโดนตัดขาด */
             transform: translateZ(0);
         }
 
@@ -668,9 +669,22 @@
             }
         }
 
+        // ฟังก์ชัน Toggle Fullscreen แบบรองรับ iPad/Safari
         function toggleFullScreen() {
-            if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(e => { console.log(e); }); }
-            else { if (document.exitFullscreen) document.exitFullscreen(); }
+            const doc = document.documentElement;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (doc.requestFullscreen) { 
+                    doc.requestFullscreen().catch(e => { console.log(e); }); 
+                } else if (doc.webkitRequestFullscreen) { 
+                    doc.webkitRequestFullscreen(); 
+                }
+            } else {
+                if (document.exitFullscreen) { 
+                    document.exitFullscreen(); 
+                } else if (document.webkitExitFullscreen) { 
+                    document.webkitExitFullscreen(); 
+                }
+            }
         }
 
         function toggleUI(e) {
@@ -852,7 +866,6 @@
                 
                 params.encodings[0].maxBitrate = bitrate;
                 // ปิดการบังคับ minBitrate เพื่อไม่ให้เกิดคอขวดตอนเน็ตแกว่ง
-                // if (bitrate > 100000) params.encodings[0].minBitrate = Math.floor(bitrate * 0.5); 
                 
                 params.encodings[0].degradationPreference = 'maintain-resolution';
                 sender.setParameters(params).catch(e => console.log(e));
