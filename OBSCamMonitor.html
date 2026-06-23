@@ -4,20 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V2.5b</title>
+    <title>OBSCam Control V3.0 Smart Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5"></script>
-
-    <script type="text/javascript">
-        var sc_project = 13147874;
-        var sc_invisible = 0;
-        var sc_security = "550e33c0";
-        var scJsHost = "https://";
-        document.write("<sc" + "ript type='text/javascript' src='" + scJsHost + "statcounter.com/counter/counter.js'></" + "script>");
-    </script>
 
     <style>
         body {
@@ -74,9 +66,10 @@
         video {
             width: 100%;
             height: 100%;
-            /* เปลี่ยนเป็น contain เพื่อโชว์ภาพแนวตั้งให้เห็นเต็มตัว ไม่โดนซูมตัดหัวตัดเท้า */
-            object-fit: contain; 
+            /* เริ่มต้นที่ cover เดี๋ยวสคริปต์ด้านล่างจะจัดการปรับตามแนวตั้ง/แนวนอนให้เอง */
+            object-fit: cover; 
             background: transparent;
+            transition: object-fit 0.3s ease;
         }
 
         .hidden {
@@ -232,7 +225,7 @@
         <div class="absolute bottom-10 text-center">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
             </p>
-            <p class="text-[9px] text-gray-600">Version 2.5b</p>
+            <p class="text-[9px] text-gray-600">Version 3.0</p>
         </div>
     </div>
 
@@ -353,7 +346,6 @@
         <div class="text-center mt-2 pt-2 border-t border-gray-800">
             <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
                     class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-            <p class="text-[9px] text-gray-600">V2.5b</p>
         </div>
 
         <div id="obs-link-modal" class="modal-overlay">
@@ -400,6 +392,32 @@
     </div>
 
     <script>
+        // ==================================================
+        // Smart Aspect Ratio Logic (แก้ปัญหาภาพโดนซูมตัดขอบ)
+        // ==================================================
+        const remoteVideo = document.getElementById('remote-video');
+        
+        // เฝ้าดูการเปลี่ยนแปลงของขนาดวิดีโอแบบ Real-time
+        remoteVideo.addEventListener('resize', () => {
+            const w = remoteVideo.videoWidth;
+            const h = remoteVideo.videoHeight;
+            
+            if (w === 0 || h === 0) return; // ยังโหลดไม่เสร็จ
+            
+            if (w < h) {
+                // ถ้าความกว้างน้อยกว่าความสูง = ถือมือถือแนวตั้ง
+                // เปลี่ยนโหมดเป็น contain (โชว์เต็มตัว แต่อยู่ตรงกลางกรอบ 16:9)
+                remoteVideo.style.objectFit = 'contain';
+                console.log('[Monitor] Portrait video detected -> Mode: Contain');
+            } else {
+                // ถ้าความกว้างมากกว่า = ถือมือถือแนวนอน
+                // เปลี่ยนโหมดเป็น cover (ขยายเต็มกรอบ 16:9 ไร้ขอบดำ)
+                remoteVideo.style.objectFit = 'cover';
+                console.log('[Monitor] Landscape video detected -> Mode: Cover');
+            }
+        });
+        // ==================================================
+
         const firebaseConfig = { apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ", authDomain: "obscam-p2p.firebaseapp.com", databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "obscam-p2p", appId: "1:531335072084:web:dc373db6b66581a63160c1" };
 
         console.log('[DEBUG] Initializing Firebase...');
@@ -425,9 +443,7 @@
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' }
+                { urls: 'stun:stun.cloudflare.com:3478' }
             ]
         };
 
@@ -600,7 +616,6 @@
                         await db.ref(`OBSCam_rooms/${roomId}/config/roomName`).set(savedName);
                     }
                     
-                    // Auto-update OBS if it's a fresh session (meaning user had OBS open from previous usage)
                     autoUpdateExistingSources(roomId);
                 }
 
@@ -637,12 +652,10 @@
             document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(phoneUrl)}`;
             document.getElementById('phone-url-input').value = phoneUrl;
 
-            // Listen for stats and readiness from each camera
             for (let i = 1; i <= maxCams; i++) {
                 listenCamStats(i);
             }
 
-            // Offline detection timer
             setInterval(() => {
                 const now = Date.now();
                 for (let i = 1; i <= maxCams; i++) {
@@ -671,9 +684,7 @@
 
         let monitorPCs = {};
 
-        // Listen for stats and source readiness from Firebase
         function listenCamStats(cIdx) {
-            // WebRTC DataChannel connection for Stats directly from Phone
             const monRef = db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/mon`);
             let pendingCandidates = [];
             
@@ -758,7 +769,6 @@
                 }
             });
 
-            // OBS Source Check-in listener
             if(sourceListeners[cIdx]) db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/source_ready`).off('value', sourceListeners[cIdx]);
             
             const srcListener = (snap) => {
@@ -861,7 +871,6 @@
         // ============ Reset Source ============
         function resetSource(camNum) {
             if (!roomId) return;
-            // Clear signaling data to force re-negotiation
             db.ref(`OBSCam_rooms/${roomId}/cam${camNum}/obs/answer`).remove();
             db.ref(`OBSCam_rooms/${roomId}/cam${camNum}/obs/calleeCandidates`).remove();
             console.log(`[Reset] Source ${camNum} signaling cleared`);
@@ -896,7 +905,7 @@
                     }
                     readyRef.set(Date.now());
                 } else {
-                    if (Date.now() - lastVideoTime > 180000) { // 3 mins
+                    if (Date.now() - lastVideoTime > 180000) { 
                         if (!isSleep) {
                             isSleep = true;
                             readyRef.set('sleep');
@@ -1074,7 +1083,7 @@
                             inputSettings: { url: newUrl }
                         });
                         console.log(`[OBS WS] Auto-updated URL for OBSCam ${i}`);
-                    } catch(e) { } // Ignore if source doesn't exist
+                    } catch(e) { } 
                 }
                 await obs.disconnect();
             } catch(e) { 
