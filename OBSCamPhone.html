@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- บังคับเต็มจอ iPad / iPhone -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V4.0 Ultimate</title>
+    <title>OBSCam Sender V4.4 Fix Aspect Ratio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -95,26 +96,6 @@
             width: 8px;
             height: 150px;
             padding: 0 5px;
-        }
-
-        /* กรอบโฟกัสจำลองตอนแตะจอ (Tap to focus) */
-        #focus-ring {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            border: 2px solid #FACC15; /* สีเหลือง */
-            border-radius: 12px;
-            pointer-events: none;
-            z-index: 30;
-            transform: translate(-50%, -50%) scale(1.5);
-            opacity: 0;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-        
-        #focus-ring.focusing {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
         }
 
         /* แนวนอน (Landscape) */
@@ -293,6 +274,7 @@
 </head>
 
 <body>
+    <!-- หน้าจอตั้งค่าก่อนเริ่ม (Setup UI) -->
     <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
         <button onclick="toggleSettingsModal(true)"
             class="absolute top-4 right-4 bg-gray-800 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-xs font-bold border border-gray-700">
@@ -340,6 +322,7 @@
         </div>
     </div>
 
+    <!-- โมดอลตั้งค่าหลัก (ใช้ก่อนสตรีม) -->
     <div id="settings-ui" class="settings-modal overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-white"><i class="fas fa-sliders-h mr-2"></i> Settings</h2>
@@ -378,8 +361,8 @@
                     <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">FPS</label>
                     <select id="fps" onchange="saveSettings()"
                         class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none">
-                        <option value="30" selected>30</option>
-                        <option value="60">60</option>
+                        <option value="30">30</option>
+                        <option value="60" selected>60</option>
                     </select>
                 </div>
             </div>
@@ -413,12 +396,12 @@
         </div>
     </div>
 
+    <!-- หน้าจอ Live UI -->
     <div id="live-ui" class="hidden absolute inset-0 bg-black z-0" onclick="toggleUI(event)">
         
-        <video id="preview" class="video-full" autoplay playsinline muted onclick="handleTapToFocus(event)"></video>
+        <video id="preview" class="video-full" autoplay playsinline muted></video>
 
-        <div id="focus-ring"></div>
-
+        <!-- Grid Layer -->
         <div id="grid-layer"
             class="grid-lines hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none z-10 opacity-50">
             <div class="border border-white/30"></div><div class="border border-white/30"></div><div class="border border-white/30"></div>
@@ -428,6 +411,7 @@
 
         <div id="overlay-controls" class="absolute inset-0 pointer-events-none fade-ui z-20">
 
+            <!-- มุมข้อมูล (HUD) -->
             <div class="live-hud">
                 <div
                     class="bg-black/60 px-3 py-2 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2 pointer-events-auto shadow-lg w-fit">
@@ -448,6 +432,7 @@
                 </div>
             </div>
 
+            <!-- แถบเครื่องมือรอง -->
             <div class="live-tools">
                 <button onclick="toggleMic()" id="mic-btn"
                     class="w-10 h-10 rounded-full bg-green-500/90 backdrop-blur text-white shadow-lg active:scale-90 transition"><i
@@ -460,6 +445,7 @@
                         class="fas fa-border-all"></i></button>
             </div>
 
+            <!-- Control Dock หลัก -->
             <div class="live-dock">
                 <button onclick="reconnectSignaling()"
                     class="w-12 h-12 rounded-full bg-gray-800/80 hover:bg-gray-700 flex flex-col items-center justify-center text-white transition active:scale-90 shadow"
@@ -481,6 +467,7 @@
                 </button>
             </div>
 
+            <!-- แถบซูม -->
             <div id="zoom-container" class="hidden zoom-wrapper pointer-events-auto">
                 <i class="fas fa-plus text-[10px] text-white mb-2"></i>
                 <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1"
@@ -490,8 +477,10 @@
         </div>
     </div>
 
+    <!-- Backdrop สำหรับ Live Sheet -->
     <div id="sheet-backdrop" class="sheet-backdrop" onclick="closeLiveSettings()"></div>
 
+    <!-- เมนูปรับตั้งค่าขณะไลฟ์ (Live Settings Bottom Sheet) -->
     <div id="live-sheet" class="live-sheet flex flex-col gap-4">
         <div class="w-12 h-1 bg-gray-700 rounded-full mx-auto mb-2"></div>
         <h3 class="text-white font-bold text-center text-sm mb-2">Live Camera Settings</h3>
@@ -541,6 +530,7 @@
         </div>
     </div>
 
+    <!-- Modal สำหรับกรอก Custom Bitrate -->
     <div id="custom-bitrate-modal" class="modal-overlay">
         <div class="modal-box">
             <h3 class="text-white font-bold mb-4 text-sm">Set Custom Bitrate (kbps)</h3>
@@ -553,6 +543,7 @@
         </div>
     </div>
 
+    <!-- QR Scanner Overlay -->
     <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center">
         <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -565,6 +556,7 @@
         <canvas id="qr-canvas" hidden></canvas>
     </div>
 
+    <!-- Scripts -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
@@ -608,7 +600,6 @@
         let frozenCount = 0;
 
         let currentTargetSelect = null;
-        let focusTimeout = null;
 
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
@@ -654,68 +645,6 @@
             }
         }
 
-        // ============================
-        // ฟังก์ชันระบบ Tap-to-Focus (แตะเพื่อโฟกัส)
-        // ============================
-        async function handleTapToFocus(e) {
-            // ป้องกันการทับซ้อนกับการซ่อน/เปิด UI
-            if (document.getElementById('overlay-controls').classList.contains('ui-hidden') === false) {
-                toggleUI(e); // ซ่อน UI ไปก่อนถ้าแตะที่จอ
-            }
-
-            if (!videoTrack) return;
-
-            const preview = document.getElementById('preview');
-            const rect = preview.getBoundingClientRect();
-            
-            // คำนวณตำแหน่ง X, Y แบบ 0.0 - 1.0 (ความต้องการของ API)
-            const x = (e.clientX - rect.left) / rect.width;
-            const y = (e.clientY - rect.top) / rect.height;
-
-            // แสดง Focus Ring บนหน้าจอ
-            const ring = document.getElementById('focus-ring');
-            ring.style.left = `${e.clientX}px`;
-            ring.style.top = `${e.clientY}px`;
-            
-            // รีเซ็ตคลาสแอนิเมชั่น
-            ring.classList.remove('focusing');
-            void ring.offsetWidth; // บังคับให้เบราว์เซอร์รีเฟรช DOM
-            ring.classList.add('focusing');
-
-            if (focusTimeout) clearTimeout(focusTimeout);
-            focusTimeout = setTimeout(() => {
-                ring.classList.remove('focusing');
-            }, 2000);
-
-            try {
-                const capabilities = videoTrack.getCapabilities();
-                // ตรวจสอบว่ากล้อง/เบราว์เซอร์รองรับการโฟกัสจุดที่เลือกไหม (iOS Safari อาจจะบล็อกส่วนนี้)
-                if (capabilities.focusMode && capabilities.focusMode.includes('single-shot')) {
-                    await videoTrack.applyConstraints({
-                        advanced: [{
-                            focusMode: 'single-shot',
-                            pointsOfInterest: [{ x: x, y: y }]
-                        }]
-                    });
-
-                    // วนกลับเป็นโหมดออโต้โฟกัสต่อเนื่อง หลังจากล็อกโฟกัสแล้ว 3 วินาที
-                    setTimeout(() => {
-                        videoTrack.applyConstraints({
-                            advanced: [{ focusMode: 'continuous' }]
-                        }).catch(err => console.log(err));
-                    }, 3000);
-                } else {
-                    // ถ้าระบบไม่รองรับ pointsOfInterest (เช่น iOS) ให้แค่บังคับปั๊มโหมด focus ปกติ
-                    await videoTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
-                }
-            } catch (err) {
-                console.log("Tap to focus not supported on this device/browser.", err);
-            }
-        }
-
-        // ============================
-        // ฟังก์ชันระบบ Single Custom Bitrate 
-        // ============================
         function setCustomBitrateOption(val) {
             let text = `${(val / 1000).toFixed(1)} M (Custom)`;
             ['bitrate', 'live-bitrate'].forEach(id => {
@@ -779,9 +708,14 @@
             closeCustomBitrateModal();
         }
 
-        // ============================
-        // ฟังก์ชันควบคุม UI
-        // ============================
+        function loadCustomBitratesList() {
+            let savedCustom = localStorage.getItem('obs_custom_bitrate');
+            if (savedCustom) {
+                customBitrateVal = parseInt(savedCustom);
+                setCustomBitrateOption(customBitrateVal);
+            }
+        }
+
         function toggleSettingsModal(show) {
             const modal = document.getElementById('settings-ui');
             if (show) {
@@ -816,23 +750,29 @@
                 checkRoomConfig();
             }
 
+            let savedRes = localStorage.getItem('obs_res') || "1080";
+            let savedFps = localStorage.getItem('obs_fps') || "60";
+            let savedB = localStorage.getItem('obs_bitrate') || "6000";
+
+            document.getElementById('res').value = savedRes;
+            document.getElementById('fps').value = savedFps;
+
             if (localStorage.getItem('obs_cam_index')) document.getElementById('cam-index').value = localStorage.getItem('obs_cam_index');
             if (localStorage.getItem('obs_camera_id')) document.getElementById('camera-select').value = localStorage.getItem('obs_camera_id');
             if (localStorage.getItem('obs_audio_id')) document.getElementById('audio-source').value = localStorage.getItem('obs_audio_id');
-            if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
-            if (localStorage.getItem('obs_fps')) document.getElementById('fps').value = localStorage.getItem('obs_fps');
 
-            let savedCustom = localStorage.getItem('obs_custom_bitrate');
-            if (savedCustom) {
-                customBitrateVal = parseInt(savedCustom);
-                setCustomBitrateOption(customBitrateVal);
-            }
+            let liveSel = document.getElementById('live-bitrate');
+            let sel = document.getElementById('bitrate');
 
-            let savedB = localStorage.getItem('obs_bitrate');
-            if (savedB) {
-                document.getElementById('bitrate').value = savedB;
-                let liveSel = document.getElementById('live-bitrate');
+            let exists = Array.from(sel.options).find(o => o.value === savedB);
+            if (exists) {
+                sel.value = savedB;
                 if (liveSel) liveSel.value = savedB;
+                if (savedB !== 'custom') customBitrateVal = parseInt(savedB);
+            } else if (!isNaN(parseInt(savedB))) {
+                customBitrateVal = parseInt(savedB);
+                sel.value = '6000'; 
+                if (liveSel) liveSel.value = '6000';
             }
         }
 
@@ -950,15 +890,20 @@
 
             if (currentBitrateSet === 'custom') {
                 liveBitSel.value = 'custom';
-                liveBitSel.options[liveBitSel.options.length - 1].text = `Custom (${customBitrateVal})`;
             } else {
                 liveBitSel.value = currentBitrateSet;
             }
 
-            // คำนวณความกว้างอัตราส่วน 16:9 สำหรับ 2K (2560x1440) และ 4K (3840x2160)
+            // ==========================================
+            // แก้ไขการดึงความกว้าง/ความสูงให้ถูกต้องตามแนวตั้ง/แนวนอน
+            // ==========================================
+            const isPortrait = window.innerHeight > window.innerWidth;
+            let idealW = isPortrait ? quality : Math.round(quality * 1.777);
+            let idealH = isPortrait ? Math.round(quality * 1.777) : quality;
+
             let videoConstraints = {
-                width: { ideal: Math.round(quality * 1.777) },
-                height: { ideal: quality },
+                width: { ideal: idealW },
+                height: { ideal: idealH },
                 frameRate: { ideal: fpsVal },
                 resizeMode: "none"
             };
@@ -1003,6 +948,7 @@
                 document.getElementById('live-ui').classList.remove('hidden');
 
                 checkZoomCapabilities();
+
                 connectOBS(roomId, targetCamIndex);
                 startUpdatingStats();
 
@@ -1201,7 +1147,6 @@
 
             let offer = await pc.createOffer();
             let finalSDP = preferCodec(offer.sdp, 'H264');
-            // เปิดเพดาน 30Mbps เผื่อไว้สำหรับคนจะดันบิทเรท 4K (25M)
             finalSDP = setMediaBitrateSDP(finalSDP, 30000);
             offer = new RTCSessionDescription({ type: 'offer', sdp: finalSDP });
 
@@ -1452,15 +1397,21 @@
             const currentDeviceId = videoTrack.getSettings().deviceId;
             const targetDeviceId = deviceId || currentDeviceId;
 
+            // ==========================================
+            // แก้ไขการดึงความกว้าง/ความสูงให้ถูกต้องตามแนวตั้ง/แนวนอน เมื่อมีการสลับกล้อง
+            // ==========================================
+            const isPortrait = window.innerHeight > window.innerWidth;
+            let idealW = isPortrait ? quality : Math.round(quality * 1.777);
+            let idealH = isPortrait ? Math.round(quality * 1.777) : quality;
+
             let videoConstraints = {
-                width: { ideal: Math.round(quality * 1.777) },
-                height: { ideal: quality },
+                width: { ideal: idealW },
+                height: { ideal: idealH },
                 frameRate: { ideal: fpsVal },
                 resizeMode: "none"
             };
 
             try {
-                // ถ้าเปลี่ยนแค่ความชัด ให้สลับแบบไร้รอยต่อ
                 if (targetDeviceId === currentDeviceId) {
                     await videoTrack.applyConstraints(videoConstraints);
                     updateLiveResDisplay();
@@ -1468,7 +1419,6 @@
                     return; 
                 }
 
-                // ถ้าเปลี่ยนเลนส์ ต้องปิดเลนส์เก่าก่อน
                 videoConstraints.deviceId = { exact: targetDeviceId };
                 myStream.getVideoTracks().forEach(t => t.stop());
 
