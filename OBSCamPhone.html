@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- บังคับเต็มจอ iPad / iPhone -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V3.3 Stable</title>
+    <title>OBSCam Sender V3.4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -207,6 +208,34 @@
             transform: translateY(0);
         }
 
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+        }
+
         /* Bottom Sheet สำหรับตั้งค่าตอน Live */
         .live-sheet {
             position: fixed;
@@ -245,6 +274,7 @@
 </head>
 
 <body>
+    <!-- หน้าจอตั้งค่าก่อนเริ่ม (Setup UI) -->
     <div id="setup" class="p-6 flex flex-col items-center bg-slate-950">
         <button onclick="toggleSettingsModal(true)"
             class="absolute top-4 right-4 bg-gray-800 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-xs font-bold border border-gray-700">
@@ -292,6 +322,7 @@
         </div>
     </div>
 
+    <!-- โมดอลตั้งค่าหลัก (ใช้ก่อนสตรีม) -->
     <div id="settings-ui" class="settings-modal overflow-y-auto">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-white"><i class="fas fa-sliders-h mr-2"></i> Settings</h2>
@@ -335,9 +366,10 @@
             </div>
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
                 <label class="text-[10px] text-gray-500 font-bold uppercase block mb-1">Bitrate</label>
+                <!-- เปลี่ยนไปเรียกใช้ handleBitrateChange แทนคำสั่งเดิม -->
                 <select id="bitrate"
                     class="w-full bg-black text-white p-2 rounded-lg text-xs border border-gray-700 outline-none"
-                    onchange="checkCustomBitrate(this)">
+                    onchange="handleBitrateChange(this)">
                     <option value="2000">2.0 M</option>
                     <option value="2500">2.5 M</option>
                     <option value="3000">3.0 M</option>
@@ -345,7 +377,7 @@
                     <option value="6000" selected>6.0 M (High)</option>
                     <option value="8500">8.5 M (Ultra)</option>
                     <option value="10000">10.0 M (Max)</option>
-                    <option value="custom">Custom...</option>
+                    <option value="custom">Add Custom...</option>
                 </select>
             </div>
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -361,9 +393,11 @@
         </div>
     </div>
 
+    <!-- หน้าจอ Live UI -->
     <div id="live-ui" class="hidden absolute inset-0 bg-black z-0" onclick="toggleUI(event)">
         <video id="preview" class="video-full" autoplay playsinline muted></video>
 
+        <!-- Grid Layer -->
         <div id="grid-layer"
             class="grid-lines hidden absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none z-10 opacity-50">
             <div class="border border-white/30"></div>
@@ -379,6 +413,7 @@
 
         <div id="overlay-controls" class="absolute inset-0 pointer-events-none fade-ui z-20">
 
+            <!-- มุมข้อมูล (HUD) -->
             <div class="live-hud">
                 <div
                     class="bg-black/60 px-3 py-2 rounded-xl backdrop-blur-md border border-white/10 flex items-center gap-2 pointer-events-auto shadow-lg w-fit">
@@ -400,6 +435,7 @@
                 </div>
             </div>
 
+            <!-- แถบเครื่องมือรอง -->
             <div class="live-tools">
                 <button onclick="toggleMic()" id="mic-btn"
                     class="w-10 h-10 rounded-full bg-green-500/90 backdrop-blur text-white shadow-lg active:scale-90 transition"><i
@@ -412,6 +448,7 @@
                         class="fas fa-border-all"></i></button>
             </div>
 
+            <!-- Control Dock หลัก -->
             <div class="live-dock">
                 <button onclick="reconnectSignaling()"
                     class="w-12 h-12 rounded-full bg-gray-800/80 hover:bg-gray-700 flex flex-col items-center justify-center text-white transition active:scale-90 shadow"
@@ -433,6 +470,7 @@
                 </button>
             </div>
 
+            <!-- แถบซูม -->
             <div id="zoom-container" class="hidden zoom-wrapper pointer-events-auto">
                 <i class="fas fa-plus text-[10px] text-white mb-2"></i>
                 <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1"
@@ -442,8 +480,10 @@
         </div>
     </div>
 
+    <!-- Backdrop สำหรับ Live Sheet -->
     <div id="sheet-backdrop" class="sheet-backdrop" onclick="closeLiveSettings()"></div>
 
+    <!-- เมนูปรับตั้งค่าขณะไลฟ์ (Live Settings Bottom Sheet) -->
     <div id="live-sheet" class="live-sheet flex flex-col gap-4">
         <div class="w-12 h-1 bg-gray-700 rounded-full mx-auto mb-2"></div>
         <h3 class="text-white font-bold text-center text-sm mb-2">Live Camera Settings</h3>
@@ -471,7 +511,9 @@
                     <option value="60">60 FPS</option>
                     <option value="30">30 FPS</option>
                 </select>
-                <select id="live-bitrate" onchange="handleLiveBitrateChange(this)"
+                
+                <!-- เปลี่ยนไปเรียกใช้ handleBitrateChange -->
+                <select id="live-bitrate" onchange="handleBitrateChange(this)"
                     class="bg-gray-900 text-white text-xs p-3 rounded-xl border border-gray-700 outline-none text-center">
                     <option value="2000">2.0 M</option>
                     <option value="2500">2.5 M</option>
@@ -480,7 +522,7 @@
                     <option value="6000">6.0 M</option>
                     <option value="8500">8.5 M</option>
                     <option value="10000">10.0 M</option>
-                    <option value="custom">Custom...</option>
+                    <option value="custom">Add Custom...</option>
                 </select>
             </div>
 
@@ -489,6 +531,20 @@
         </div>
     </div>
 
+    <!-- Modal สำหรับกรอก Custom Bitrate (แก้ปัญหา prompt() ทำภาพค้าง) -->
+    <div id="custom-bitrate-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="text-white font-bold mb-4 text-sm">Add Custom Bitrate (kbps)</h3>
+            <input type="number" id="custom-bitrate-input" placeholder="เช่น 12000"
+                class="bg-black text-white border border-gray-700 rounded p-2 w-full font-mono mb-4 text-center outline-none focus:border-blue-500">
+            <div class="flex gap-2">
+                <button onclick="confirmCustomBitrate()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs py-3 rounded-lg font-bold">Add & Apply</button>
+                <button onclick="closeCustomBitrateModal()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-xs py-3 rounded-lg font-bold">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Overlay -->
     <div id="qr-overlay" class="hidden fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center">
         <video id="qr-video" class="absolute inset-0 w-full h-full object-cover"></video>
         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -501,6 +557,7 @@
         <canvas id="qr-canvas" hidden></canvas>
     </div>
 
+    <!-- Scripts -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ",
@@ -540,10 +597,15 @@
         let currentMaxCams = 4;
         let currentRoomName = '';
 
+        // ตัวแปรสำหรับ Custom Bitrate
+        let customBitratesList = [];
+        let currentTargetSelect = null;
+
         const urlParams = new URLSearchParams(window.location.search);
         const roomFromUrl = urlParams.get('room');
 
         initDeviceSelection().then(() => {
+            loadCustomBitratesList();
             loadSettings();
         });
 
@@ -583,6 +645,92 @@
             }
         }
 
+        // ============================
+        // ฟังก์ชันระบบ Custom Bitrate (ไม่แช่แข็งวิดีโอ)
+        // ============================
+        function loadCustomBitratesList() {
+            const savedList = localStorage.getItem('obs_custom_bitrates_list');
+            if (savedList) {
+                try {
+                    customBitratesList = JSON.parse(savedList);
+                } catch(e) { 
+                    customBitratesList = []; 
+                }
+            }
+            
+            const setupSel = document.getElementById('bitrate');
+            const liveSel = document.getElementById('live-bitrate');
+            
+            customBitratesList.forEach(val => {
+                addOptionIfMissing(setupSel, val);
+                addOptionIfMissing(liveSel, val);
+            });
+        }
+
+        function addOptionIfMissing(selectEl, val) {
+            let existing = Array.from(selectEl.options).find(o => o.value === val.toString());
+            if (!existing) {
+                let opt = new Option(`${(val / 1000).toFixed(1)} M (Custom)`, val);
+                selectEl.add(opt, selectEl.options[selectEl.options.length - 1]); // แทรกไว้ก่อนหน้าปุ่ม Add Custom...
+            }
+        }
+
+        function handleBitrateChange(el) {
+            if (el.value === 'custom') {
+                currentTargetSelect = el;
+                document.getElementById('custom-bitrate-modal').classList.add('active');
+                document.getElementById('custom-bitrate-input').value = customBitrateVal;
+                // Focus กล่องพิมพ์อัตโนมัติ
+                setTimeout(() => document.getElementById('custom-bitrate-input').focus(), 100);
+            } else {
+                updateLiveBitrate(el.value);
+                saveSettings();
+            }
+        }
+
+        function closeCustomBitrateModal() {
+            document.getElementById('custom-bitrate-modal').classList.remove('active');
+            if (currentTargetSelect) {
+                // ถ้ากดยกเลิก ให้กลับไปแสดงค่าเดิมที่เคยเลือกไว้
+                currentTargetSelect.value = customBitrateVal.toString();
+            }
+        }
+
+        function confirmCustomBitrate() {
+            const val = parseInt(document.getElementById('custom-bitrate-input').value);
+            if (val && !isNaN(val)) {
+                customBitrateVal = val;
+                
+                // บันทึกบิทเรทใหม่ลงในลิสต์ (ถ้ายังไม่มี)
+                if (!customBitratesList.includes(val)) {
+                    customBitratesList.push(val);
+                    localStorage.setItem('obs_custom_bitrates_list', JSON.stringify(customBitratesList));
+                }
+                
+                const setupSel = document.getElementById('bitrate');
+                const liveSel = document.getElementById('live-bitrate');
+                
+                addOptionIfMissing(setupSel, val);
+                addOptionIfMissing(liveSel, val);
+                
+                if (currentTargetSelect) {
+                    setupSel.value = val;
+                    liveSel.value = val;
+                }
+                
+                updateLiveBitrate(val);
+                saveSettings();
+            } else {
+                // ถ้าไม่ได้พิมพ์อะไร ให้กลับไปที่ 6000
+                if (currentTargetSelect) currentTargetSelect.value = "6000";
+                updateLiveBitrate(6000);
+            }
+            closeCustomBitrateModal();
+        }
+
+        // ============================
+        // ฟังก์ชันควบคุม UI 
+        // ============================
         function toggleSettingsModal(show) {
             const modal = document.getElementById('settings-ui');
             if (show) {
@@ -603,6 +751,7 @@
         }
 
         function toggleUI(e) {
+            // ซ่อน/แสดง ควบคุมเมื่อแตะที่ว่างบนวิดีโอ
             if (e.target.id === 'preview' || e.target.id === 'live-ui') {
                 document.getElementById('overlay-controls').classList.toggle('ui-hidden');
             }
@@ -636,14 +785,15 @@
             if (localStorage.getItem('obs_bitrate')) {
                 const b = localStorage.getItem('obs_bitrate');
                 const sel = document.getElementById('bitrate');
-                if (b === 'custom' && localStorage.getItem('obs_custom_bitrate')) {
-                    customBitrateVal = parseInt(localStorage.getItem('obs_custom_bitrate') || 6000);
-                    // เปลี่ยนชื่อปุ่ม custom ให้โชว์ค่าปัจจุบัน
-                    const customOpt = Array.from(sel.options).find(o => o.value === 'custom');
-                    if (customOpt) customOpt.text = `Custom (${customBitrateVal})`;
-                    sel.value = 'custom';
-                } else {
+                // ตรวจสอบว่าบิทเรทเดิมมีอยู่ในลิสต์หรือไม่ ถ้าเป็น custom เก่าที่เคยบันทึกไว้ ก็ให้ดึงมาเลือกเลย
+                let exists = Array.from(sel.options).find(o => o.value === b);
+                if (exists) {
                     sel.value = b;
+                    customBitrateVal = parseInt(b);
+                } else if (!isNaN(parseInt(b))) {
+                    // ป้องกันเผื่อกรณีที่ค่าเก่าหลุดไป
+                    customBitrateVal = parseInt(b);
+                    sel.value = '6000'; 
                 }
             }
         }
@@ -694,44 +844,16 @@
         function saveSettings() {
             localStorage.setItem('obs_room_id', document.getElementById('room-id').value);
             localStorage.setItem('obs_cam_index', document.getElementById('cam-index').value);
-            localStorage.setItem('obs_bitrate', document.getElementById('bitrate').value);
             localStorage.setItem('obs_camera_id', document.getElementById('camera-select').value);
             localStorage.setItem('obs_audio_id', document.getElementById('audio-source').value);
             localStorage.setItem('obs_res', document.getElementById('res').value);
             localStorage.setItem('obs_fps', document.getElementById('fps').value);
-            if (document.getElementById('bitrate').value === 'custom' || document.getElementById('live-bitrate').value === 'custom') {
-                localStorage.setItem('obs_custom_bitrate', customBitrateVal);
+            
+            // ใช้ค่าจาก dropdown เพื่อให้ชัวร์
+            let currentB = document.getElementById('bitrate').value;
+            if (currentB !== 'custom') {
+                localStorage.setItem('obs_bitrate', currentB);
             }
-        }
-
-        function checkCustomBitrate(el) {
-            if (el.value === 'custom') {
-                const val = prompt("Bitrate (kbps):", customBitrateVal);
-                if (val && !isNaN(val)) {
-                    customBitrateVal = parseInt(val);
-                    el.options[el.options.length - 1].text = `Custom (${customBitrateVal})`;
-                } else {
-                    el.value = "6000";
-                }
-            }
-            saveSettings();
-        }
-
-        function handleLiveBitrateChange(el) {
-            if (el.value === 'custom') {
-                const val = prompt("Enter Custom Bitrate (kbps):", customBitrateVal);
-                if (val && !isNaN(val)) {
-                    customBitrateVal = parseInt(val);
-                    el.options[el.options.length - 1].text = `Custom (${customBitrateVal})`;
-                    updateLiveBitrate(customBitrateVal);
-                } else {
-                    el.value = "6000";
-                    updateLiveBitrate(6000);
-                }
-            } else {
-                updateLiveBitrate(el.value);
-            }
-            saveSettings();
         }
 
         async function startStreaming() {
@@ -789,11 +911,9 @@
             const currentBitrateSet = document.getElementById('bitrate').value;
             const liveBitSel = document.getElementById('live-bitrate');
 
-            if (currentBitrateSet === 'custom') {
-                liveBitSel.value = 'custom';
-                liveBitSel.options[liveBitSel.options.length - 1].text = `Custom (${customBitrateVal})`;
-            } else {
+            if (currentBitrateSet !== 'custom') {
                 liveBitSel.value = currentBitrateSet;
+                customBitrateVal = parseInt(currentBitrateSet);
             }
 
             let videoConstraints = {
@@ -843,6 +963,7 @@
                 document.getElementById('live-ui').classList.remove('hidden');
 
                 checkZoomCapabilities();
+
                 connectOBS(roomId, targetCamIndex);
                 startUpdatingStats();
 
