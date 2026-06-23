@@ -7,7 +7,7 @@
     <!-- บังคับเต็มจอ iPad / iPhone -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>OBSCam Sender V3.6 Stable</title>
+    <title>OBSCam Sender V3.7 Seamless</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -376,8 +376,7 @@
                     <option value="6000" selected>6.0 M (High)</option>
                     <option value="8500">8.5 M (Ultra)</option>
                     <option value="10000">10.0 M (Max)</option>
-                    <!-- ตัวเลือก Custom ที่จะถูกอัปเดตค่าเมื่อผู้ใช้พิมพ์ทับ -->
-                    <option value="custom">⚙️ Add/Edit Custom...</option>
+                    <option value="custom">Add Custom...</option>
                 </select>
             </div>
             <div class="bg-gray-900 p-3 rounded-xl border border-gray-800">
@@ -443,7 +442,6 @@
 
             <!-- Control Dock หลัก -->
             <div class="live-dock">
-                <!-- ปุ่มรีเซ็ต (Soft-Reconnect ไม่ปิดกล้อง) -->
                 <button onclick="reconnectSignaling()"
                     class="w-12 h-12 rounded-full bg-gray-800/80 hover:bg-gray-700 flex flex-col items-center justify-center text-white transition active:scale-90 shadow"
                     title="Reset Signal">
@@ -451,7 +449,6 @@
                     <span class="text-[7px] font-bold uppercase tracking-wider">Reset</span>
                 </button>
 
-                <!-- ปุ่มหยุดสตรีม (ปิดกล้อง กลับหน้าแรก) -->
                 <button onclick="stopStreaming()"
                     class="w-16 h-16 rounded-full bg-red-600 border-[3px] border-white/40 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.6)] active:scale-90 transition">
                     <div class="w-6 h-6 bg-white rounded-sm"></div>
@@ -582,7 +579,6 @@
         let audioTrack;
         let qrStream;
         
-        // กำหนดตัวแปรสำหรับ Custom Bitrate
         let customBitrateVal = 6000;
         let targetCamIndex = "1";
         let roomId = "";
@@ -592,7 +588,7 @@
         let sessionTotalBytes = 0;
         let currentMaxCams = 4;
         let currentRoomName = '';
-        let frozenCount = 0; // ตัวนับระบบ Watchdog ป้องกันภาพค้าง
+        let frozenCount = 0;
 
         let currentTargetSelect = null;
 
@@ -642,19 +638,16 @@
         // ============================
         // ฟังก์ชันระบบ Single Custom Bitrate 
         // ============================
-        
         function setCustomBitrateOption(val) {
             let text = `${(val / 1000).toFixed(1)} M (Custom)`;
             ['bitrate', 'live-bitrate'].forEach(id => {
                 let sel = document.getElementById(id);
                 if (!sel) return;
                 
-                // หาว่ามี option ที่เป็นคลาส custom-opt อยู่ไหม ถ้าไม่มีให้สร้าง
                 let opt = Array.from(sel.options).find(o => o.classList.contains('custom-opt'));
                 if (!opt) {
                     opt = document.createElement('option');
                     opt.classList.add('custom-opt');
-                    // แทรกไว้ก่อนตัวเลือกคำว่า custom
                     let trigger = Array.from(sel.options).find(o => o.value === 'custom');
                     sel.insertBefore(opt, trigger);
                 }
@@ -677,8 +670,6 @@
 
         function closeCustomBitrateModal() {
             document.getElementById('custom-bitrate-modal').classList.remove('active');
-            
-            // ถ้ายกเลิกการพิมพ์ ให้เด้งกลับไปเลือกค่า Bitrate ปัจจุบันจริงๆ
             ['bitrate', 'live-bitrate'].forEach(id => {
                 let sel = document.getElementById(id);
                 if (sel && sel.value === 'custom') {
@@ -692,13 +683,13 @@
             const val = parseInt(document.getElementById('custom-bitrate-input').value);
             if (val && !isNaN(val)) {
                 customBitrateVal = val;
-                localStorage.setItem('obs_custom_bitrate', val); // บันทึกทับค่า custom เดิม
+                localStorage.setItem('obs_custom_bitrate', val);
                 
-                setCustomBitrateOption(val); // สั่งอัปเดต UI ช่อง Custom
+                setCustomBitrateOption(val);
                 
                 ['bitrate', 'live-bitrate'].forEach(id => {
                     let sel = document.getElementById(id);
-                    if (sel) sel.value = val; // เปลี่ยนให้ Select มาชี้ที่ค่าที่เพิ่งสร้าง
+                    if (sel) sel.value = val;
                 });
                 
                 updateLiveBitrate(val);
@@ -753,14 +744,12 @@
             if (localStorage.getItem('obs_res')) document.getElementById('res').value = localStorage.getItem('obs_res');
             if (localStorage.getItem('obs_fps')) document.getElementById('fps').value = localStorage.getItem('obs_fps');
 
-            // โหลดและสร้างออปชั่น Custom ถ้าเคยบันทึกไว้
             let savedCustom = localStorage.getItem('obs_custom_bitrate');
             if (savedCustom) {
                 customBitrateVal = parseInt(savedCustom);
                 setCustomBitrateOption(customBitrateVal);
             }
 
-            // เลือกค่าบิทเรทล่าสุดที่เคยใช้
             let savedB = localStorage.getItem('obs_bitrate');
             if (savedB) {
                 document.getElementById('bitrate').value = savedB;
@@ -917,8 +906,9 @@
                 videoTrack = myStream.getVideoTracks()[0];
                 audioTrack = myStream.getAudioTracks()[0];
 
+                // แก้เรื่องภาพหน่วง/ดีเลย์ โดยบังคับส่งสดลื่นๆ (motion)
                 if (videoTrack) {
-                    videoTrack.contentHint = "detail";
+                    videoTrack.contentHint = "motion";
                 }
                 if (audioTrack) {
                     audioTrack.enabled = startUnmuted;
@@ -957,39 +947,135 @@
 
         function updateLiveBitrate(val) {
             if (!isNaN(val)) {
+                customBitrateVal = parseInt(val);
                 if (pc) {
-                    setBitrate(pc, parseInt(val) * 1000);
+                    setBitrate(pc, customBitrateVal * 1000);
                 }
             }
         }
 
-        function applyLiveSettings() {
+        // ==========================================
+        // ฟังก์ชันเปลี่ยนความชัด/เลนส์ แบบ Seamless
+        // เปลี่ยนกลางอากาศโดยที่ภาพไม่ดับ (ยกเว้นเปลี่ยนเลนส์)
+        // ==========================================
+        async function applyLiveSettings() {
             const res = parseInt(document.getElementById('live-res').value);
             const fps = parseInt(document.getElementById('live-fps').value);
             const devId = document.getElementById('live-cam-select').value;
-
+            
             document.getElementById('res').value = res;
             document.getElementById('fps').value = fps;
-
             saveSettings();
-            switchCamera(devId ? devId : undefined, res, fps);
+            
+            // เรียกใช้ switchCamera ที่อัปเกรดแล้ว
+            await switchCamera(devId ? devId : undefined, res, fps);
         }
 
-        // ฟังก์ชันปิดสตรีม จะปิดกล้องด้วย
+        async function switchCamera(deviceId, forceRes, forceFps) {
+            if (!myStream || !videoTrack) return;
+            const quality = forceRes || parseInt(document.getElementById('live-res').value);
+            const fpsVal = forceFps || parseInt(document.getElementById('live-fps').value);
+
+            const currentDeviceId = videoTrack.getSettings().deviceId;
+            const targetDeviceId = deviceId || currentDeviceId;
+
+            let videoConstraints = {
+                width: { ideal: quality * 1.777 },
+                height: { ideal: quality },
+                frameRate: { ideal: fpsVal },
+                resizeMode: "none"
+            };
+
+            try {
+                // ถ้าแค่เปลี่ยนความชัด/เฟรมเรท ให้ปรับสดๆ ไปเลย ภาพไม่ดับแน่นอน! (Seamless)
+                if (targetDeviceId === currentDeviceId) {
+                    await videoTrack.applyConstraints(videoConstraints);
+                    updateLiveResDisplay();
+                    saveSettings();
+                    return; 
+                }
+
+                // แต่ถ้าเปลี่ยนเลนส์จริงๆ (เช่น จากกล้องหน้าไปหลัง) อุปกรณ์ iOS บังคับให้ปิดเลนส์เก่าก่อน
+                videoConstraints.deviceId = { exact: targetDeviceId };
+                myStream.getVideoTracks().forEach(t => t.stop()); 
+
+                let newStream;
+                try {
+                    newStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
+                } catch (err) {
+                    try {
+                        delete videoConstraints.resizeMode;
+                        newStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: videoConstraints });
+                    } catch (err2) {
+                        newStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+                    }
+                }
+                const newVideoTrack = newStream.getVideoTracks()[0];
+                newVideoTrack.contentHint = "motion";
+
+                if (pc) {
+                    const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                    if (sender) {
+                        await sender.replaceTrack(newVideoTrack);
+                    }
+                }
+
+                videoTrack = newVideoTrack;
+
+                let tracks = [newVideoTrack];
+                if (audioTrack) {
+                    tracks.push(audioTrack);
+                }
+                myStream = new MediaStream(tracks);
+
+                document.getElementById('preview').srcObject = myStream;
+                checkZoomCapabilities();
+                updateLiveResDisplay();
+
+                if (deviceId) {
+                    document.getElementById('camera-select').value = deviceId;
+                    saveSettings();
+                }
+            } catch (e) {
+                alert("Camera Update Failed: " + e);
+            }
+        }
+
+        // ==========================================
+        // ฟังก์ชัน Soft-Reconnect (แก้ภาพดับ กล้องหลุด)
+        // เมื่อเน็ตมีปัญหา จะรีเซ็ตแค่ท่อส่ง WebRTC 
+        // โดย "ไม่สั่งปิดกล้องหน้าจอพรีวิว"
+        // ==========================================
+        function reconnectSignaling() {
+            if (!roomId || !targetCamIndex || !myStream) return;
+
+            document.getElementById('status-txt').innerText = 'RECONNECTING...';
+            document.getElementById('status-dot').className = 'w-3 h-3 rounded-full bg-yellow-400 animate-pulse';
+
+            if (statsChannel) statsChannel.close();
+            if (pc) pc.close();
+            if (monPc) monPc.close();
+
+            pc = null;
+            monPc = null;
+            statsChannel = null;
+
+            db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/obs`).remove();
+            db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/mon`).remove();
+
+            setTimeout(() => {
+                connectOBS(roomId, targetCamIndex);
+            }, 1000);
+        }
+
         function stopStreaming() {
             if (myStream) {
                 myStream.getTracks().forEach(track => track.stop());
             }
 
-            if (statsChannel) {
-                statsChannel.close();
-            }
-            if (pc) {
-                pc.close();
-            }
-            if (monPc) {
-                monPc.close();
-            }
+            if (statsChannel) statsChannel.close();
+            if (pc) pc.close();
+            if (monPc) monPc.close();
 
             pc = null;
             monPc = null;
@@ -1006,36 +1092,6 @@
 
             closeLiveSettings();
             sessionTotalBytes = 0;
-        }
-
-        // ==========================================
-        // ฟังก์ชัน Soft-Reconnect (แก้ภาพดับ กล้องหลุด)
-        // เมื่อเน็ตมีปัญหา จะรีเซ็ตแค่ท่อส่ง WebRTC 
-        // โดย "ไม่สั่งปิดกล้องหน้าจอพรีวิว" เด็ดขาด
-        // ==========================================
-        function reconnectSignaling() {
-            if (!roomId || !targetCamIndex || !myStream) return;
-
-            document.getElementById('status-txt').innerText = 'RECONNECTING...';
-            document.getElementById('status-dot').className = 'w-3 h-3 rounded-full bg-yellow-400 animate-pulse';
-
-            // ปิดท่อเก่าทิ้ง
-            if (statsChannel) statsChannel.close();
-            if (pc) pc.close();
-            if (monPc) monPc.close();
-
-            pc = null;
-            monPc = null;
-            statsChannel = null;
-
-            // ล้างข้อมูลสัญญาณใน Firebase เพื่อเริ่มคุยใหม่
-            db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/obs`).remove();
-            db.ref(`OBSCam_rooms/${roomId}/cam${targetCamIndex}/mon`).remove();
-
-            // เริ่มต่อท่อใหม่ใน 1 วินาที โดยกล้องยังเปิดอยู่เหมือนเดิม!
-            setTimeout(() => {
-                connectOBS(roomId, targetCamIndex);
-            }, 1000);
         }
 
         function getTargetBitrate() {
@@ -1150,9 +1206,8 @@
                     document.getElementById('status-txt').innerText = 'RECONNECTING...';
                     document.getElementById('status-dot').className = 'w-3 h-3 rounded-full bg-yellow-400 animate-pulse';
 
-                    // สั่ง Soft-Reconnect ถ้าสัญญาณหลุด
                     if (state === 'failed') {
-                        reconnectSignaling();
+                        reconnectSignaling(); // ใช้ระบบต่อสายใหม่โดยไม่ดับกล้อง
                     }
                 }
             };
@@ -1250,7 +1305,8 @@
                 }
 
                 params.encodings[0].maxBitrate = bitrate;
-                params.encodings[0].degradationPreference = 'maintain-resolution';
+                // เปลี่ยนโหมดกลับมาเป็นเน้นเฟรมเรท (ลดดีเลย์)
+                params.encodings[0].degradationPreference = 'maintain-framerate';
                 sender.setParameters(params).catch(e => console.log(e));
             }
         }
@@ -1259,7 +1315,7 @@
             lastBytes = 0;
             lastTime = Date.now();
             sessionTotalBytes = 0;
-            frozenCount = 0; // เริ่มนับหมาเฝ้ายามใหม่
+            frozenCount = 0; 
             updateLiveResDisplay();
 
             statsInterval = setInterval(async () => {
@@ -1284,17 +1340,16 @@
                     }
                     
                     // ==========================================
-                    // Watchdog: ตรวจจับภาพค้าง (ส่ง 0 kbps รัวๆ)
+                    // Watchdog: ตรวจจับภาพค้าง และเตะสายใหม่ (5 วิ)
                     // ==========================================
                     if (obsBytes === lastBytes && pc && (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed')) {
                         frozenCount++;
-                        // ถ้าค้างติดต่อกัน 5 วินาที ให้สั่ง Soft-Reconnect
                         if (frozenCount >= 5) {
                             frozenCount = 0;
                             reconnectSignaling();
                         }
                     } else {
-                        frozenCount = 0; // ถ้าสัญญาณกลับมาเดินปกติ ให้รีเซ็ตตัวนับ
+                        frozenCount = 0; 
                     }
 
                     const diffMain = (obsBytes > lastBytes) ? (obsBytes - lastBytes) : 0;
@@ -1380,71 +1435,6 @@
                 document.getElementById('zoom-container').classList.remove('hidden');
             } else {
                 document.getElementById('zoom-container').classList.add('hidden');
-            }
-        }
-
-        async function switchCamera(deviceId, forceRes, forceFps) {
-            if (!myStream) return;
-            const quality = forceRes || parseInt(document.getElementById('live-res').value);
-            const fpsVal = forceFps || parseInt(document.getElementById('live-fps').value);
-
-            try {
-                myStream.getVideoTracks().forEach(t => t.stop());
-
-                let videoConstraints = {
-                    width: { ideal: quality * 1.777 },
-                    height: { ideal: quality },
-                    frameRate: { ideal: fpsVal },
-                    resizeMode: "none"
-                };
-
-                if (deviceId) {
-                    videoConstraints.deviceId = { exact: deviceId };
-                } else if (videoTrack && videoTrack.getSettings().deviceId) {
-                    videoConstraints.deviceId = { exact: videoTrack.getSettings().deviceId };
-                } else {
-                    videoConstraints.facingMode = 'environment';
-                }
-
-                let newStream;
-                try {
-                    newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
-                } catch (err) {
-                    try {
-                        delete videoConstraints.resizeMode;
-                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: videoConstraints });
-                    } catch (err2) {
-                        newStream = await navigator.mediaDevices.getUserMedia({ audio: audioTrack && audioTrack.enabled, video: true });
-                    }
-                }
-                const newVideoTrack = newStream.getVideoTracks()[0];
-
-                if (pc) {
-                    const sender = pc.getSenders().find(s => s.track.kind === 'video');
-                    if (sender) {
-                        sender.replaceTrack(newVideoTrack);
-                    }
-                }
-
-                videoTrack = newVideoTrack;
-                videoTrack.contentHint = "detail";
-
-                let tracks = [newVideoTrack];
-                if (audioTrack) {
-                    tracks.push(audioTrack);
-                }
-                myStream = new MediaStream(tracks);
-
-                document.getElementById('preview').srcObject = myStream;
-                checkZoomCapabilities();
-                updateLiveResDisplay();
-
-                if (deviceId) {
-                    document.getElementById('camera-select').value = deviceId;
-                    saveSettings();
-                }
-            } catch (e) {
-                alert("Switch/Apply Settings failed: " + e);
             }
         }
 
