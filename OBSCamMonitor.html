@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V3.0 Smart Monitor</title>
+    <title>OBSCam Control V4.0 Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -13,11 +13,30 @@
 
     <style>
         body {
-            background: #111;
+            background: transparent; /* ให้พื้นหลังใสสำหรับ OBS */
             color: white;
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
             margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #mode-screen {
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+            overflow: hidden;
+            position: relative;
+        }
+
+        video {
+            width: 100vw;
+            height: 100vh;
+            /* โหมด contain คือไม้ตาย! บังคับไม่ให้ภาพโดนตัดขอบ ไม่ว่าจะถือกล้องตั้งหรือนอน */
+            object-fit: contain !important; 
+            background: transparent;
         }
 
         .control-panel {
@@ -53,23 +72,6 @@
             width: 90%;
             max-width: 350px;
             text-align: center;
-        }
-
-        #mode-screen {
-            width: 100vw;
-            height: 100vh;
-            background: transparent;
-            overflow: hidden;
-            position: relative;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            /* เริ่มต้นที่ cover เดี๋ยวสคริปต์ด้านล่างจะจัดการปรับตามแนวตั้ง/แนวนอนให้เอง */
-            object-fit: cover; 
-            background: transparent;
-            transition: object-fit 0.3s ease;
         }
 
         .hidden {
@@ -183,7 +185,10 @@
             z-index: 5;
             color: #666;
         }
-        .waiting-overlay.hidden { display: none; }
+
+        .waiting-overlay.hidden {
+            display: none;
+        }
     </style>
 </head>
 
@@ -193,12 +198,14 @@
             <i class="fas fa-video text-4xl mb-3 opacity-50"></i>
             <p class="font-mono text-sm">WAITING FOR CAMERA...</p>
         </div>
+        <!-- วิดีโอหลัก (ใส่ muted ให้ Chrome ยอมเล่นอัตโนมัติ) -->
         <video id="remote-video" autoplay playsinline muted></video>
         <button onclick="window.location.reload()" class="reset-screen-btn">
             <i class="fas fa-sync"></i> Reset
         </button>
     </div>
 
+    <!-- ส่วน UI ควบคุม -->
     <div id="start-screen" class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
         <div class="simple-logo">
             <div class="logo-main">OBSCam</div>
@@ -223,14 +230,13 @@
                 class="fas fa-play mr-2"></i> Start New Session</button>
 
         <div class="absolute bottom-10 text-center">
-            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
-            </p>
-            <p class="text-[9px] text-gray-600">Version 3.0</p>
+            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span></p>
+            <p class="text-[9px] text-gray-600">Version 4.0</p>
         </div>
     </div>
 
-    <div id="connecting-screen"
-        class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
+    <!-- Connecting Screen -->
+    <div id="connecting-screen" class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
         <div class="simple-logo mb-6">
             <div class="logo-main">OBSCam</div>
             <div class="logo-sub">CONTROL</div>
@@ -265,11 +271,6 @@
                     <i class="fas fa-redo mr-2"></i>ลองใหม่
                 </button>
             </div>
-        </div>
-
-        <div class="absolute bottom-10 text-center">
-            <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span>
-            </p>
         </div>
     </div>
 
@@ -343,11 +344,6 @@
                 & New Room</button>
         </div>
 
-        <div class="text-center mt-2 pt-2 border-t border-gray-800">
-            <p class="text-[10px] text-gray-500">Developed by <a href="https://easydonate.app/Jamornz" target="_blank"
-                    class="text-blue-400 font-bold hover:underline">JamornzMedia</a></p>
-        </div>
-
         <div id="obs-link-modal" class="modal-overlay">
             <div class="modal-box text-left">
                 <h3 class="text-blue-400 font-bold mb-2 text-sm text-center">OBS Browser Sources</h3>
@@ -362,67 +358,44 @@
                     class="w-full text-xs text-gray-500 hover:text-white text-center mt-3">Close</button>
             </div>
         </div>
+        
         <div id="phone-link-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-white font-bold mb-2 text-sm">Scan to Connect</h3>
-                <div class="bg-white p-2 rounded mb-3 inline-block"><img id="qr-code-img" src="" alt="QR"
-                        class="w-32 h-32"></div>
+                <div class="bg-white p-2 rounded mb-3 inline-block"><img id="qr-code-img" src="" alt="QR" class="w-32 h-32"></div>
                 <div class="flex gap-2 mb-2">
-                    <input type="text" id="phone-url-input"
-                        class="bg-black text-[10px] text-gray-400 border border-gray-700 rounded p-2 flex-1 font-mono"
-                        readonly>
-                    <button onclick="copyPhoneLink()"
-                        class="bg-blue-600 text-white text-[10px] px-3 rounded font-bold">Copy</button>
+                    <input type="text" id="phone-url-input" class="bg-black text-[10px] text-gray-400 border border-gray-700 rounded p-2 flex-1 font-mono" readonly>
+                    <button onclick="copyPhoneLink()" class="bg-blue-600 text-white text-[10px] px-3 rounded font-bold">Copy</button>
                 </div>
-                <button onclick="closeModal('phone-link-modal')"
-                    class="text-xs text-gray-500 block w-full mt-2">Close</button>
+                <button onclick="closeModal('phone-link-modal')" class="text-xs text-gray-500 block w-full mt-2">Close</button>
             </div>
         </div>
+        
         <div id="new-room-modal" class="modal-overlay">
             <div class="modal-box">
                 <h3 class="text-red-500 font-bold mb-2">Warning</h3>
                 <p class="text-xs text-gray-400 mb-4">Create New Room?</p>
                 <div class="text-[10px] text-blue-400 mb-4 px-2">ถ้า OBS เปิดอยู่ ระบบจะอัปเดตลิ้งค์ของ Source เดิมให้เป็นห้องใหม่โดยอัตโนมัติ</div>
-                <button onclick="confirmNewRoom()"
-                    class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-xs font-bold mb-2 text-white">Yes</button>
-                <button onclick="closeModal('new-room-modal')"
-                    class="text-xs text-gray-500 mt-2 block w-full">Cancel</button>
+                <button onclick="confirmNewRoom()" class="w-full bg-red-600 hover:bg-red-500 py-2 rounded text-xs font-bold mb-2 text-white">Yes</button>
+                <button onclick="closeModal('new-room-modal')" class="text-xs text-gray-500 mt-2 block w-full">Cancel</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================================================
-        // Smart Aspect Ratio Logic (แก้ปัญหาภาพโดนซูมตัดขอบ)
-        // ==================================================
-        const remoteVideo = document.getElementById('remote-video');
-        
-        // เฝ้าดูการเปลี่ยนแปลงของขนาดวิดีโอแบบ Real-time
-        remoteVideo.addEventListener('resize', () => {
-            const w = remoteVideo.videoWidth;
-            const h = remoteVideo.videoHeight;
-            
-            if (w === 0 || h === 0) return; // ยังโหลดไม่เสร็จ
-            
-            if (w < h) {
-                // ถ้าความกว้างน้อยกว่าความสูง = ถือมือถือแนวตั้ง
-                // เปลี่ยนโหมดเป็น contain (โชว์เต็มตัว แต่อยู่ตรงกลางกรอบ 16:9)
-                remoteVideo.style.objectFit = 'contain';
-                console.log('[Monitor] Portrait video detected -> Mode: Contain');
-            } else {
-                // ถ้าความกว้างมากกว่า = ถือมือถือแนวนอน
-                // เปลี่ยนโหมดเป็น cover (ขยายเต็มกรอบ 16:9 ไร้ขอบดำ)
-                remoteVideo.style.objectFit = 'cover';
-                console.log('[Monitor] Landscape video detected -> Mode: Cover');
-            }
-        });
-        // ==================================================
-
-        const firebaseConfig = { apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ", authDomain: "obscam-p2p.firebaseapp.com", databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "obscam-p2p", appId: "1:531335072084:web:dc373db6b66581a63160c1" };
+        const firebaseConfig = { 
+            apiKey: "AIzaSyCRpQWN6J1HYE4r5R8YC2od0ZBt_gSm-iQ", 
+            authDomain: "obscam-p2p.firebaseapp.com", 
+            databaseURL: "https://obscam-p2p-default-rtdb.asia-southeast1.firebasedatabase.app", 
+            projectId: "obscam-p2p", 
+            appId: "1:531335072084:web:dc373db6b66581a63160c1" 
+        };
 
         console.log('[DEBUG] Initializing Firebase...');
         try {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
             console.log('[DEBUG] Firebase initialized successfully');
         } catch (e) {
             console.error('[ERROR] Firebase init failed:', e);
@@ -439,12 +412,12 @@
             }
         });
 
-        const rtcConfig = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
+        const rtcConfig = { 
+            iceServers: [ 
+                { urls: 'stun:stun.l.google.com:19302' }, 
                 { urls: 'stun:stun1.l.google.com:19302' },
                 { urls: 'stun:stun.cloudflare.com:3478' }
-            ]
+            ] 
         };
 
         const params = new URLSearchParams(window.location.search);
@@ -569,11 +542,7 @@
             }
         }
 
-        let pendingRejoin = false;
-
         async function startConnectionProcess(rejoin) {
-            pendingRejoin = rejoin;
-
             setStepStatus('step-firebase', 'loading');
             updateConnectStatus('กำลังเชื่อมต่อ Firebase...');
 
@@ -721,7 +690,11 @@
 
                 mpc.onicecandidate = event => {
                     if (event.candidate) {
-                        pendingCandidates.push({c: event.candidate.candidate, m: event.candidate.sdpMid, i: event.candidate.sdpMLineIndex});
+                        pendingCandidates.push({
+                            c: event.candidate.candidate, 
+                            m: event.candidate.sdpMid, 
+                            i: event.candidate.sdpMLineIndex
+                        });
                     } else if (pendingCandidates.length > 0) {
                         monRef.child('calleeCandidates').set(pendingCandidates);
                     }
@@ -764,12 +737,20 @@
                 const candidates = snapshot.val();
                 if (candidates && Array.isArray(candidates)) {
                     candidates.forEach(c => { 
-                        if (c) mpc.addIceCandidate(new RTCIceCandidate({ candidate: c.c, sdpMid: c.m, sdpMLineIndex: c.i })).catch(e => { }); 
+                        if (c) {
+                            mpc.addIceCandidate(new RTCIceCandidate({ 
+                                candidate: c.c, 
+                                sdpMid: c.m, 
+                                sdpMLineIndex: c.i 
+                            })).catch(e => { }); 
+                        }
                     });
                 }
             });
 
-            if(sourceListeners[cIdx]) db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/source_ready`).off('value', sourceListeners[cIdx]);
+            if(sourceListeners[cIdx]) {
+                db.ref(`OBSCam_rooms/${roomId}/cam${cIdx}/source_ready`).off('value', sourceListeners[cIdx]);
+            }
             
             const srcListener = (snap) => {
                 const ts = snap.val();
@@ -932,7 +913,8 @@
             });
 
             const roomRef = db.ref(`OBSCam_rooms/${rid}/cam${cIdx}/obs`);
-            await roomRef.child('answer').remove(); await roomRef.child('calleeCandidates').remove();
+            await roomRef.child('answer').remove(); 
+            await roomRef.child('calleeCandidates').remove();
 
             let pendingCandidates = [];
             
@@ -991,7 +973,13 @@
                 const candidates = snapshot.val();
                 if (candidates && Array.isArray(candidates)) {
                     candidates.forEach(c => { 
-                        if (c) pc.addIceCandidate(new RTCIceCandidate({ candidate: c.c, sdpMid: c.m, sdpMLineIndex: c.i })).catch(e => { }); 
+                        if (c) {
+                            pc.addIceCandidate(new RTCIceCandidate({ 
+                                candidate: c.c, 
+                                sdpMid: c.m, 
+                                sdpMLineIndex: c.i 
+                            })).catch(e => { }); 
+                        }
                     });
                 }
             });
