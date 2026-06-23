@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBSCam Control V4.0 Monitor</title>
+    <title>OBSCam Control V4.4 Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -13,7 +13,7 @@
 
     <style>
         body {
-            background: transparent; /* ให้พื้นหลังใสสำหรับ OBS */
+            background: #000; /* พื้นหลังสีดำสำหรับทำขอบดำ */
             color: white;
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
@@ -26,7 +26,7 @@
         #mode-screen {
             width: 100vw;
             height: 100vh;
-            background: transparent;
+            background: #000; /* พื้นหลังสีดำ */
             overflow: hidden;
             position: relative;
         }
@@ -34,7 +34,7 @@
         video {
             width: 100vw;
             height: 100vh;
-            /* โหมด contain คือไม้ตาย! บังคับไม่ให้ภาพโดนตัดขอบ ไม่ว่าจะถือกล้องตั้งหรือนอน */
+            /* โหมด contain: บังคับยัดภาพลงกรอบโดยไม่ตัด ถ้าภาพตั้งจะมีขอบดำซ้ายขวา ถ้าภาพนอนจะเต็มจอพอดี */
             object-fit: contain !important; 
             background: transparent;
         }
@@ -198,14 +198,12 @@
             <i class="fas fa-video text-4xl mb-3 opacity-50"></i>
             <p class="font-mono text-sm">WAITING FOR CAMERA...</p>
         </div>
-        <!-- วิดีโอหลัก (ใส่ muted ให้ Chrome ยอมเล่นอัตโนมัติ) -->
         <video id="remote-video" autoplay playsinline muted></video>
         <button onclick="window.location.reload()" class="reset-screen-btn">
             <i class="fas fa-sync"></i> Reset
         </button>
     </div>
 
-    <!-- ส่วน UI ควบคุม -->
     <div id="start-screen" class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
         <div class="simple-logo">
             <div class="logo-main">OBSCam</div>
@@ -231,7 +229,7 @@
 
         <div class="absolute bottom-10 text-center">
             <p class="text-[10px] text-gray-500">Developed by <span class="text-blue-400 font-bold">JamornzMedia</span></p>
-            <p class="text-[9px] text-gray-600">Version 4.0</p>
+            <p class="text-[9px] text-gray-600">Version 4.4 Monitor</p>
         </div>
     </div>
 
