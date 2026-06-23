@@ -11,7 +11,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5"></script>
 
-    <!-- StatCounter -->
     <script type="text/javascript">
         var sc_project = 13147874;
         var sc_invisible = 0;
@@ -75,7 +74,9 @@
         video {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            /* เปลี่ยนเป็น contain เพื่อโชว์ภาพแนวตั้งให้เห็นเต็มตัว ไม่โดนซูมตัดหัวตัดเท้า */
+            object-fit: contain; 
+            background: transparent;
         }
 
         .hidden {
@@ -199,7 +200,6 @@
             <i class="fas fa-video text-4xl mb-3 opacity-50"></i>
             <p class="font-mono text-sm">WAITING FOR CAMERA...</p>
         </div>
-        <!-- เพิ่ม muted ตรงนี้เพื่อให้ Chrome ยอมเล่นภาพอัตโนมัติ -->
         <video id="remote-video" autoplay playsinline muted></video>
         <button onclick="window.location.reload()" class="reset-screen-btn">
             <i class="fas fa-sync"></i> Reset
@@ -236,7 +236,6 @@
         </div>
     </div>
 
-    <!-- Connecting Screen -->
     <div id="connecting-screen"
         class="hidden fixed inset-0 bg-[#0a0a0a] z-50 flex flex-col items-center justify-center">
         <div class="simple-logo mb-6">
