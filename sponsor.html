@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OBS Sponsor Manager V1.1 (Multi-Profile)</title>
+    <!-- Include OBS WebSocket JS -->
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.4/dist/obs-ws.min.js"></script>
     <style>
         /* ================== CORE & RESET ================== */
@@ -624,9 +625,12 @@
         </div>
 
         <div class="section">
-            <h2>Manage Profiles (แยกชุดรูปภาพ)</h2>
-            <input type="text" id="profile-input" placeholder="เช่น scene1, scene2" style="width:100%; padding:8px; margin-bottom:10px; background:#111; color:#fff; border:1px solid #555; border-radius:4px;">
-            <button class="btn btn-primary" onclick="switchProfile()">สร้าง / สลับ Profile</button>
+            <h2>Manage Profiles (เลือก/จัดการซีน)</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <select id="profile-select" onchange="switchProfile()" style="flex: 1;"></select>
+                <button class="btn btn-primary" style="width: auto; padding: 8px; margin: 0;" onclick="createNewProfile()">+ สร้างใหม่</button>
+            </div>
+            <button class="btn btn-outline" style="font-size: 11px;" onclick="deleteCurrentProfile()">🗑️ ลบ Profile ปัจจุบัน</button>
         </div>
 
         <div class="section">
@@ -637,7 +641,7 @@
                 <div id="file-count">0 Images</div>
             </div>
             <input type="file" id="file-input" multiple accept="image/*" style="display:none">
-            <button class="btn btn-danger" onclick="clearAllData()" data-t="btn_reset">Reset All Data</button>
+            <button class="btn btn-danger" onclick="clearAllData()" data-t="btn_reset">Reset Current Profile Data</button>
         </div>
 
         <div class="section">
@@ -867,7 +871,7 @@
     <script>
         const LANG_DATA = {
             en: {
-                txt_images: "Manage Images", txt_drop: "Drag & Drop Images Here", btn_reset: "Reset All Data",
+                txt_images: "Manage Images", txt_drop: "Drag & Drop Images Here", btn_reset: "Reset Current Profile Data",
                 txt_mode: "Display Mode", txt_settings: "Settings", btn_sync: "Force Sync Screens",
                 btn_help: "How to Use", btn_sponsor: "Sponsor",
                 lbl_size: "Size", lbl_radius: "Radius", lbl_shadow: "Shadow",
@@ -879,7 +883,7 @@
                 btn_create: "Create in OBS"
             },
             th: {
-                txt_images: "จัดการรูปภาพ", txt_drop: "ลากรูปภาพมาวางที่นี่", btn_reset: "ล้างข้อมูลทั้งหมด",
+                txt_images: "จัดการรูปภาพ", txt_drop: "ลากรูปภาพมาวางที่นี่", btn_reset: "ล้างข้อมูล Profile ปัจจุบัน",
                 txt_mode: "โหมดแสดงผล", txt_settings: "ตั้งค่า", btn_sync: "บังคับ Sync หน้าจอ",
                 btn_help: "วิธีใช้งาน", btn_sponsor: "ผู้สนับสนุน",
                 lbl_size: "ขนาดรูป", lbl_radius: "ความมน", lbl_shadow: "เงา",
@@ -905,9 +909,84 @@
             }
         }
 
+        // ================== PROFILE MANAGEMENT ==================
+        const PROFILE_LIST_KEY = 'obs_sponsor_profiles_list';
         const urlParamsGlobal = new URLSearchParams(window.location.search);
         const currentProfile = urlParamsGlobal.get('profile') || 'default';
 
+        function getSavedProfiles() {
+            let profiles = localStorage.getItem(PROFILE_LIST_KEY);
+            if (!profiles) {
+                profiles = ['default'];
+                localStorage.setItem(PROFILE_LIST_KEY, JSON.stringify(profiles));
+            } else {
+                profiles = JSON.parse(profiles);
+                if (!profiles.includes('default')) profiles.unshift('default');
+            }
+            return profiles;
+        }
+
+        function saveProfileList(profiles) {
+            localStorage.setItem(PROFILE_LIST_KEY, JSON.stringify(profiles));
+        }
+
+        function renderProfileSelect() {
+            const select = document.getElementById('profile-select');
+            if (!select) return;
+            const profiles = getSavedProfiles();
+            select.innerHTML = '';
+            profiles.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p === 'default' ? 'Default (ค่าเริ่มต้น)' : p;
+                if (p === currentProfile) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function switchProfile() {
+            const selected = document.getElementById('profile-select').value;
+            if (selected !== currentProfile) {
+                window.location.href = `?mode=control&profile=${selected}`;
+            }
+        }
+
+        function createNewProfile() {
+            const name = prompt('ตั้งชื่อ Profile ใหม่ (ภาษาอังกฤษ/ตัวเลข ไม่มีเว้นวรรค):');
+            if (!name || name.trim() === '') return;
+            const cleanName = name.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+            if (cleanName === '') {
+                alert('ชื่อ Profile ไม่ถูกต้อง โปรดใช้ภาษาอังกฤษหรือตัวเลข');
+                return;
+            }
+            const profiles = getSavedProfiles();
+            if (profiles.includes(cleanName)) {
+                alert('ชื่อ Profile นี้มีอยู่แล้ว! กรุณาเลือกจาก Dropdown');
+                return;
+            }
+            profiles.push(cleanName);
+            saveProfileList(profiles);
+            window.location.href = `?mode=control&profile=${cleanName}`;
+        }
+
+        function deleteCurrentProfile() {
+            if (currentProfile === 'default') {
+                alert('ไม่สามารถลบ Profile "default" (ค่าเริ่มต้น) ได้ครับ');
+                return;
+            }
+            if (!confirm(`ยืนยันการลบ Profile "${currentProfile}" ใช่หรือไม่?\nข้อมูลรูปภาพและการตั้งค่าทั้งหมดในหมวดหมู่นี้จะหายไป`)) return;
+
+            let profiles = getSavedProfiles();
+            profiles = profiles.filter(p => p !== currentProfile);
+            saveProfileList(profiles);
+
+            localStorage.removeItem(CONFIG_KEY);
+            indexedDB.deleteDatabase(DB_NAME);
+
+            window.location.href = `?mode=control&profile=default`;
+        }
+
+        // ================== DATABASES & CONFIG ==================
         const DB_NAME = 'OBSSponsorUltimateDB_' + currentProfile;
         const STORE_NAME = 'imgs';
         const CONFIG_KEY = 'obs_sponsor_ultimate_cfg_' + currentProfile;
@@ -932,6 +1011,16 @@
 
         async function init() {
             document.getElementById('loading').style.display = 'flex';
+            
+            // Check Profile in URL to add to list if someone manually types it
+            if (currentProfile !== 'default') {
+                const profiles = getSavedProfiles();
+                if (!profiles.includes(currentProfile)) {
+                    profiles.push(currentProfile);
+                    saveProfileList(profiles);
+                }
+            }
+
             const savedCfg = localStorage.getItem(CONFIG_KEY);
             if (savedCfg) {
                 const parsed = JSON.parse(savedCfg);
@@ -980,7 +1069,7 @@
             });
         }
         async function clearAllData() {
-            if (!confirm('CONFIRM RESET / ยืนยันการล้างข้อมูล?')) return;
+            if (!confirm(`ยืนยันการล้างข้อมูลสำหรับ Profile "${currentProfile}"?`)) return;
             localStorage.removeItem(CONFIG_KEY);
             const db = await openDB();
             const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -989,6 +1078,7 @@
         }
 
         function initController() {
+            renderProfileSelect();
             updateFileCount(); setupDragDrop(); changeModeUI(); generateUrlList();
         }
         function setupDragDrop() {
@@ -1250,7 +1340,7 @@
             const t = LANG_DATA[currentLang] || LANG_DATA['th'];
             const list = document.getElementById('url-list');
             if (!list) return;
-            const baseUrl = "https://jamornzmedia.github.io/obs-dock-ui/sponsor.html";
+            const baseUrl = "https://narongsak-zx.github.io/obs-dock-ui/sponsor.html";
             const modes = [
                 { id: 'grid', n: t.mode_grid },
                 { id: 'rotator', n: t.mode_rotator },
@@ -1355,17 +1445,6 @@
                 showToast(msg);
             });
         }
-
-        function switchProfile() {
-            const newProfile = document.getElementById('profile-input').value.trim() || 'default';
-            window.location.href = `?mode=control&profile=${newProfile}`;
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            if (document.getElementById('profile-input')) {
-                document.getElementById('profile-input').value = currentProfile;
-            }
-        });
 
         init();
     </script>
