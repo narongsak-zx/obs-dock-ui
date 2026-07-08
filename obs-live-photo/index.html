@@ -8,7 +8,7 @@
     <style>
         body { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: 'Prompt', sans-serif; background-color: transparent; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         
-        /* 🌟 เพิ่มระบบซ่อนจอ (Master Switch) */
+        /* Container หลักสำหรับเปิด-ปิดจอ */
         .main-container { 
             width: 100%; height: 100%; display: flex; background-color: #0b132b; 
             transition: opacity 0.5s ease, transform 0.5s ease;
@@ -18,15 +18,14 @@
         /* พื้นที่ซ้าย (รูปภาพ) */
         .photo-section { width: 70%; height: 100%; position: relative; background-color: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         
-        /* 🌟 ระบบ Animation ของรูปภาพ */
+        /* รูปภาพและอนิเมชันการเปลี่ยนรูป */
         .photo-section img.main-photo { 
             width: 100%; 
             height: 100%; 
             object-fit: contain;
-            position: absolute; /* ล็อกให้เต็มกรอบ เพื่อการเฟดที่สมูท */
+            position: absolute;
         }
         
-        /* คลาส Animation ที่รับคำสั่งจาก Admin */
         .anim-fade { transition: opacity 0.6s ease-in-out; opacity: 0; }
         .anim-fade.active { opacity: 1; }
         
@@ -36,30 +35,37 @@
         .anim-slide { transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(40px); }
         .anim-slide.active { opacity: 1; transform: translateY(0); }
 
-        /* ข้อความตรงกลางภาพ (ปรับให้เฟดเข้าออกพร้อมรูป) */
+        /* 🌟 ปรับปรุง: ย้ายกล่องข้อความลงมาเกือบชิดขอบล่าง จัดกึ่งกลางแกน X */
         .photo-overlay { 
             position: absolute; 
-            top: 50%; 
+            bottom: 24px; /* ขยับลงมาเกือบชิดขอบล่าง */
             left: 50%; 
-            transform: translate(-50%, -50%); 
-            width: 80%; 
-            padding: 30px; 
-            background: rgba(0, 0, 0, 0.6); 
+            transform: translateX(-50%); /* จัดกึ่งกลางแกน X */
+            width: 85%; 
+            padding: 24px 30px; 
+            background: rgba(0, 0, 0, 0.65); 
             border-radius: 16px; 
             text-align: center; 
             color: white; 
             box-sizing: border-box; 
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 10;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            opacity: 0; /* ซ่อนตอนรอโหลดภาพ */
+            transition: opacity 0.4s ease;
+            opacity: 0;
         }
         .photo-overlay.active { opacity: 1; }
         
-        .photo-overlay h1 { margin: 0; font-size: 3rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .photo-overlay p { margin: 10px 0 0 0; font-size: 1.5rem; color: #d1d5db; }
+        /* 🌟 เอฟเฟกต์อนิเมชันค่อยๆ เปิดตัวอักษรเมื่อมีข้อมูลใหม่เข้ามา */
+        @keyframes revealText {
+            from { opacity: 0; filter: blur(8px); transform: translateY(12px); }
+            to { opacity: 1; filter: blur(0); transform: translateY(0); }
+        }
         
-        /* พื้นที่ขวา (QR Code) - ดีไซน์เดิมของคุณ */
+        .reveal-effect h1 { margin: 0; font-size: 2.8rem; font-weight: 600; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); animation: revealText 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .reveal-effect p { margin: 8px 0 0 0; font-size: 1.4rem; color: #e2e8f0; animation: revealText 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards; opacity: 0; }
+        
+        /* พื้นที่ขวา (QR Code) */
         .qr-section { width: 30%; height: 100%; background-color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; border-left: 5px solid #1d4ed8; }
         .qr-header { text-align: center; color: #1e3a8a; margin-bottom: 30px; }
         .qr-header h2 { font-size: 2.5rem; margin: 0; }
@@ -74,10 +80,10 @@
 
     <div class="main-container" id="master-container">
         <div class="photo-section">
-            <img id="display-photo" class="main-photo anim-fade" src="" alt="Live Photo">
+            <img id="display-photo" class="main-photo anim-fade" src="" alt="Live Photo" style="opacity: 0;">
             <div class="photo-overlay" id="photo-overlay">
-                <h1 id="display-name">ยินดีต้อนรับเข้าสู่งาน</h1>
-                <p id="display-message">รอรับรูปภาพจากผู้ร่วมงาน...</p>
+                <h1 id="display-name"></h1>
+                <p id="display-message"></p>
             </div>
         </div>
 
@@ -118,16 +124,14 @@
 
         let currentAnimClass = 'anim-fade';
 
-        // 1. รับคำสั่งซ่อนจอและเปลี่ยนอนิเมชันจากหน้าแอดมิน
+        // 1. ตรวจสอบคำสั่งตั้งค่าจอจากแอดมิน
         db.collection('settings').doc('display').onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
                 
-                // เปิด/ปิด หน้าจอ
                 if (data.isVisible === false) masterContainer.classList.add('hidden-screen');
                 else masterContainer.classList.remove('hidden-screen');
 
-                // เปลี่ยนคลาสอนิเมชัน
                 if (data.animation) {
                     photoEl.classList.remove('anim-fade', 'anim-zoom', 'anim-slide');
                     currentAnimClass = `anim-${data.animation}`;
@@ -136,9 +140,15 @@
             }
         });
 
-        // 2. ดึงรูปภาพใหม่ + ระบบโหลดล่วงหน้า (Preload)
+        // 2. รับข้อมูลรูปภาพแบบเรียลไทม์พร้อมระบบโหลดล่วงหน้าและเปิดตัวอักษร
         db.collection('photos').where('status', '==', 'showing').onSnapshot((snapshot) => {
-            if (snapshot.empty) return;
+            if (snapshot.empty) {
+                // หากหน้าแอดมินกดล้างหน้าจอ ให้สลัดรูปออกและคืนค่าเป็นหน้าจอสีดำสนิท
+                photoEl.classList.remove('active');
+                overlayEl.classList.remove('active');
+                overlayEl.classList.remove('reveal-effect');
+                return;
+            }
 
             let latestData = null;
             snapshot.forEach((doc) => {
@@ -148,40 +158,37 @@
                 }
             });
             
-            // เช็กว่าถ้ารูปใหม่ไม่ซ้ำกับรูปเดิม ค่อยรันสคริปต์สลับภาพ
             if (latestData && photoEl.src !== latestData.imageUrl) {
-                
-                // 2.1 ซ่อนภาพและข้อความเก่าก่อน
+                // ซ่อนวัตถุเดิมออกไปก่อน
                 photoEl.classList.remove('active');
                 overlayEl.classList.remove('active');
+                overlayEl.classList.remove('reveal-effect');
                 
-                // 2.2 สั่งเบราว์เซอร์ให้แอบโหลดรูปใหม่เก็บไว้หลังบ้าน
+                // เริ่มกระบวนการดาวน์โหลดรูปภาพใหม่เข้าหน่วยความจำชั่วคราว
                 const preloader = new Image();
                 preloader.src = latestData.imageUrl;
                 
-                // 2.3 พอรูปโหลดเสร็จ 100% ค่อยเอาไปแปะแล้วสั่งโชว์ขึ้นมา (กันภาพกระพริบดำ)
                 preloader.onload = () => {
                     setTimeout(() => {
                         photoEl.src = latestData.imageUrl;
                         nameEl.innerText = latestData.name;
                         messageEl.innerText = latestData.message;
                         
+                        // ปล่อยแอนิเมชันรูปภาพและเปิดกล่องตัวอักษรพร้อมกัน
                         photoEl.classList.add('active');
                         overlayEl.classList.add('active');
-                    }, 400); // ดีเลย์รอภาพเก่าหายไปแบบสมูทๆ
+                        overlayEl.classList.add('reveal-effect');
+                    }, 400);
                 };
 
-                // ป้องกันกรณีเน็ตหลุดรูปโหลดไม่ขึ้น ก็ให้ฝืนโชว์ไปเลย
                 preloader.onerror = () => {
                     photoEl.src = latestData.imageUrl;
+                    nameEl.innerText = latestData.name;
+                    messageEl.innerText = latestData.message;
                     photoEl.classList.add('active');
                     overlayEl.classList.add('active');
+                    overlayEl.classList.add('reveal-effect');
                 };
-
-            } else if (latestData && !photoEl.classList.contains('active')) {
-                // กรณีโหลดเข้าหน้าจอครั้งแรกสุด
-                photoEl.classList.add('active');
-                overlayEl.classList.add('active');
             }
         });
     </script>
