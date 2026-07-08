@@ -3,74 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Photo Layout</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>OBS Live Photo Display</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: 'Prompt', sans-serif; background-color: transparent; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .main-container { width: 100%; height: 100%; display: flex; background-color: #0b132b; }
+        body { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: 'Prompt', sans-serif; background-color: transparent; overflow: hidden; }
         
-        /* พื้นที่ซ้าย (รูปภาพ) */
-        .photo-section { width: 70%; height: 100%; position: relative; background-color: #000; /* พื้นหลังสีดำ */ display: flex; align-items: center; justify-content: center; }
-        
-        /* 🌟 แก้ไข: ให้รูปพอดีกรอบ ไม่โดนตัด */
-        .photo-section img.main-photo { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; /* เปลี่ยนจาก cover เป็น contain */
-            transition: opacity 0.5s ease-in-out; 
-            opacity: 1; 
+        /* Master Container (สำหรับเปิด-ปิดจอ) */
+        #master-container {
+            width: 100%; height: 100%; display: flex; background-color: #0b132b;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transform-origin: center;
         }
-        
-        /* 🌟 แก้ไข: ย้ายข้อความมาไว้ตรงกลางภาพ */
-        .photo-overlay { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); /* จัดให้อยู่กึ่งกลางเป๊ะๆ */
-            width: 80%; /* ไม่ให้ข้อความกว้างชิดขอบเกินไป */
-            padding: 30px; 
-            background: rgba(0, 0, 0, 0.6); /* พื้นหลังดำโปร่งแสงให้อ่านง่าย */
-            border-radius: 16px; /* ขอบมน */
-            text-align: center; /* จัดตัวหนังสือให้อยู่ตรงกลาง */
-            color: white; 
-            box-sizing: border-box; 
-            backdrop-filter: blur(5px); /* เบลอภาพด้านหลังข้อความนิดๆ ให้ดูโปร */
+        #master-container.hidden-screen {
+            opacity: 0; transform: scale(0.95); pointer-events: none;
         }
+
+        /* รูปภาพ */
+        .main-photo { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         
-        .photo-overlay h1 { margin: 0; font-size: 3rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .photo-overlay p { margin: 10px 0 0 0; font-size: 1.5rem; color: #d1d5db; }
+        /* Animation Classes */
+        .anim-fade { transition: opacity 0.8s ease-in-out; opacity: 0; }
+        .anim-fade.active { opacity: 1; }
         
-        /* พื้นที่ขวา (QR Code) */
-        .qr-section { width: 30%; height: 100%; background-color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; border-left: 5px solid #1d4ed8; }
-        .qr-header { text-align: center; color: #1e3a8a; margin-bottom: 30px; }
-        .qr-header h2 { font-size: 2.5rem; margin: 0; }
-        .qr-header h3 { font-size: 2rem; margin: 0; color: #3b82f6; }
-        .qr-image { width: 80%; max-width: 400px; border: 10px solid #f3f4f6; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .qr-instruction { text-align: center; color: #4b5563; }
-        .qr-instruction h4 { font-size: 1.8rem; margin: 0 0 10px 0; color: #1e3a8a; }
-        .qr-instruction p { font-size: 1.3rem; margin: 0; line-height: 1.5; }
+        .anim-zoom { transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94); opacity: 0; transform: scale(1.1); }
+        .anim-zoom.active { opacity: 1; transform: scale(1); }
+        
+        .anim-slide { transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(50px); }
+        .anim-slide.active { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
 
-    <div class="main-container">
-        <div class="photo-section">
-            <img id="display-photo" class="main-photo" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1920&q=80" alt="Live Photo">
-            <div class="photo-overlay">
-                <h1 id="display-name">ยินดีต้อนรับเข้าสู่งาน</h1>
-                <p id="display-message">รอรับรูปภาพจากผู้ร่วมงาน...</p>
+    <div id="master-container">
+        <div class="w-[70%] h-full relative bg-black overflow-hidden shadow-2xl z-10">
+            <img id="display-photo" class="main-photo anim-fade" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1920&q=80">
+            <div class="absolute bottom-0 left-0 w-full p-[60px_40px_40px] bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20">
+                <h1 id="display-name" class="m-0 text-[3.5rem] text-white drop-shadow-[2px_2px_4px_rgba(0,0,0,0.8)] font-bold">ยินดีต้อนรับเข้าสู่งาน</h1>
+                <p id="display-message" class="mt-2 text-[1.8rem] text-slate-200 drop-shadow-md">รอรับรูปภาพจากผู้ร่วมงาน...</p>
             </div>
         </div>
 
-        <div class="qr-section">
-            <div class="qr-header">
-                <h2>ส่งรูปขึ้นจอ</h2>
-                <h3>สแกน QR Code</h3>
-            </div>
-            <img class="qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://narongsak-zx.github.io/obs-dock-ui/obs-live-photo/upload.html" alt="QR Code">
-            <div class="qr-instruction">
-                <h4>📱 สแกนด้วยมือถือ</h4>
-                <p>อัปโหลดรูป / ใส่ชื่อ<br>รูปของคุณจะขึ้นบนจอทันที</p>
+        <div class="w-[30%] h-full bg-white flex flex-col items-center justify-center p-10 border-l-[8px] border-blue-600 relative overflow-hidden">
+            <div class="absolute top-[-50px] right-[-50px] w-40 h-40 bg-blue-100 rounded-full opacity-50"></div>
+            <div class="absolute bottom-[-50px] left-[-50px] w-60 h-60 bg-blue-50 rounded-full opacity-50"></div>
+            
+            <div class="text-center z-10">
+                <h2 class="text-[2.8rem] m-0 text-blue-900 font-bold leading-tight">ส่งรูปขึ้นจอ</h2>
+                <h3 class="text-[2rem] m-0 text-blue-500 font-semibold mb-8">สแกน QR Code</h3>
+                
+                <img class="w-[80%] max-w-[400px] border-[12px] border-slate-50 rounded-3xl shadow-[0_15px_30px_rgba(0,0,0,0.15)] mx-auto mb-8 bg-white" 
+                     src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://your-website.com/upload.html">
+                
+                <div class="text-center text-slate-600 text-[1.4rem] leading-relaxed">
+                    <strong class="text-blue-900">📱 สแกนด้วยมือถือ</strong><br>อัปโหลดรูปและข้อความ<br>เพื่อแชร์ความประทับใจ
+                </div>
             </div>
         </div>
     </div>
@@ -79,7 +67,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-        // 📥 นำเอา firebaseConfig ของจริงมาใส่ตรงนี้
+        // 📥 ใส่ Firebase Config
         const firebaseConfig = {
   apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
   authDomain: "obs-live-photo.firebaseapp.com",
@@ -89,36 +77,59 @@
   appId: "1:410755111325:web:814ca02445f4305267f774"
 };
 
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        const masterContainer = document.getElementById('master-container');
         const photoEl = document.getElementById('display-photo');
         const nameEl = document.getElementById('display-name');
         const messageEl = document.getElementById('display-message');
 
-        db.collection('photos')
-          .where('status', '==', 'showing')
-          .onSnapshot((snapshot) => {
-              if (snapshot.empty) return;
+        let currentAnimClass = 'anim-fade';
 
-              let latestData = null;
-              snapshot.forEach((doc) => {
-                  const data = doc.data();
-                  if (!latestData || data.timestamp > latestData.timestamp) {
-                      latestData = data;
-                  }
-              });
-              
-              if (latestData) {
-                  photoEl.style.opacity = 0;
-                  setTimeout(() => {
-                      photoEl.src = latestData.imageUrl;
-                      nameEl.innerText = latestData.name;
-                      messageEl.innerText = latestData.message;
-                      photoEl.style.opacity = 1;
-                  }, 500);
-              }
-          });
+        // 1. รับคำสั่งซ่อนจอ/เปลี่ยนอนิเมชัน จากหน้า Admin
+        db.collection('settings').doc('display').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                
+                // สวิตช์ เปิด-ปิด
+                if (data.isVisible === false) {
+                    masterContainer.classList.add('hidden-screen');
+                } else {
+                    masterContainer.classList.remove('hidden-screen');
+                }
+
+                // เปลี่ยน CSS อนิเมชัน
+                if (data.animation) {
+                    photoEl.classList.remove('anim-fade', 'anim-zoom', 'anim-slide');
+                    currentAnimClass = `anim-${data.animation}`;
+                    photoEl.classList.add(currentAnimClass);
+                }
+            }
+        });
+
+        // 2. รับคำสั่งเปลี่ยนรูป
+        db.collection('photos').where('status', '==', 'showing').onSnapshot(snapshot => {
+            if (snapshot.empty) return;
+            
+            let latestData = null;
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (!latestData || data.timestamp > latestData.timestamp) latestData = data;
+            });
+            
+            if (latestData) {
+                photoEl.classList.remove('active'); // สั่งรูปเก่าให้ค่อยๆ หายไป
+                
+                setTimeout(() => {
+                    photoEl.src = latestData.imageUrl;
+                    nameEl.innerText = latestData.name;
+                    messageEl.innerText = latestData.message;
+                    
+                    photoEl.classList.add('active'); // สั่งรูปใหม่โชว์ขึ้นมา
+                }, 400); 
+            }
+        });
     </script>
 </body>
 </html>
