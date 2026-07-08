@@ -5,16 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRO Event Dashboard (Full System)</title>
     
+    <!-- Tailwind & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+    <!-- OBS WebSocket -->
     <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
 
     <style>
@@ -29,8 +33,8 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // แก้ไขบัคแล้ว: ใช้ตัวแปร OBSWebSocket จาก Global ได้เลย ไม่ต้องประกาศใหม่
         const { useState, useEffect, useRef } = React;
-        const OBSWebSocket = obsWebSocketVersion.OBSWebSocket; // จาก CDN
 
         // 📥 ใส่ Firebase Config
         const firebaseConfig = {
@@ -52,14 +56,14 @@
             const [showingPhoto, setShowingPhoto] = useState(null);
             
             // State: OBS
-            const obs = useRef(new OBSWebSocket());
+            const obs = useRef(new window.OBSWebSocket());
             const [obsStatus, setObsStatus] = useState('Disconnected');
             const [obsScenes, setObsScenes] = useState([]);
             const [currentScene, setCurrentScene] = useState('');
             const [obsConfig, setObsConfig] = useState({ ip: 'ws://localhost:4455', password: '' });
 
             // State: Auto Play
-            const [autoPlayInterval, setAutoPlayInterval] = useState(0); // 0 = off, 5, 10, 15
+            const [autoPlayInterval, setAutoPlayInterval] = useState(0);
 
             // ดึงข้อมูล Firebase
             useEffect(() => {
@@ -80,7 +84,7 @@
                     timer = setInterval(() => {
                         const waiting = photos.filter(p => p.status === 'waiting');
                         if (waiting.length > 0) {
-                            pushToLive(waiting[0]); // ดึงคิวที่เก่าที่สุดขึ้นจอ
+                            pushToLive(waiting[0]);
                         }
                     }, autoPlayInterval * 1000);
                 }
@@ -94,12 +98,10 @@
                     await obs.current.connect(obsConfig.ip, obsConfig.password);
                     setObsStatus('Connected');
                     
-                    // ดึง Scene ทั้งหมด
                     const sceneList = await obs.current.call('GetSceneList');
                     setObsScenes(sceneList.scenes.map(s => s.sceneName));
                     setCurrentScene(sceneList.currentProgramSceneName);
 
-                    // ดักจับเวลาคนกดเปลี่ยน Scene ใน OBS
                     obs.current.on('CurrentProgramSceneChanged', (data) => {
                         setCurrentScene(data.sceneName);
                     });
@@ -107,7 +109,7 @@
                 } catch (error) {
                     console.error("OBS Connection Error:", error);
                     setObsStatus('Failed');
-                    alert("เชื่อมต่อ OBS ไม่สำเร็จ ตรวจสอบ IP/Password และเปิด WebSocket ใน OBS ก่อนครับ");
+                    alert("เชื่อมต่อ OBS ไม่สำเร็จ ตรวจสอบ IP/Password และเช็กว่าเปิด WebSocket ใน OBS แล้วหรือยัง");
                 }
             };
 
@@ -252,7 +254,7 @@
                         </div>
                     </div>
 
-                    {/* Bottom Queue (Drag/Click area) */}
+                    {/* Bottom Queue */}
                     <div className="h-48 border-t border-slate-800 bg-slate-900 p-4">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="font-semibold text-amber-400 flex items-center">🔥 คิวต่อไป ({waitingQueue.length})</h3>
@@ -278,7 +280,7 @@
                 </div>
             );
 
-            // --- Component: List View (คิวรอแสดง, ประวัติ, ปฏิเสธ) ---
+            // --- Component: List View ---
             const ListView = ({ title, data, showApprove, showReject, showDelete }) => (
                 <div className="flex-1 p-8 bg-slate-950 overflow-y-auto">
                     <h2 className="text-2xl font-bold text-white mb-6 border-b border-slate-800 pb-4">{title} ({data.length})</h2>
@@ -304,7 +306,6 @@
                 </div>
             );
 
-            // Render Logic
             return (
                 <div className="flex h-screen w-full text-slate-200">
                     <Sidebar />
@@ -314,12 +315,11 @@
                     {activeMenu === '✅ แสดงแล้ว' && <ListView title="✅ ประวัติรูปที่แสดงแล้ว" data={shownQueue} showApprove={true} showReject={false} showDelete={true} />}
                     {activeMenu === '🚫 รูปที่ปฏิเสธ' && <ListView title="🚫 รูปที่ถูกปฏิเสธ" data={rejectedQueue} showApprove={true} showReject={false} showDelete={true} />}
                     
-                    {/* Placeholder สำหรับเมนูที่เหลือ */}
                     {(activeMenu === '🎨 Template (Overlay)' || activeMenu === '⚙️ ตั้งค่าระบบ') && (
                         <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 p-8 text-center">
                             <span className="text-6xl mb-4">🛠️</span>
                             <h2 className="text-2xl font-bold text-white mb-2">{activeMenu}</h2>
-                            <p className="text-slate-500 max-w-md">ส่วนนี้สำหรับเชื่อมต่อกับ Template Layout บน OBS และตั้งค่า Database เพิ่มเติม (สามารถต่อยอดลอจิกเก็บค่า Setting ลง Firebase ได้เลย)</p>
+                            <p className="text-slate-500 max-w-md">ส่วนนี้สำหรับเชื่อมต่อกับ Template Layout บน OBS และตั้งค่า Database เพิ่มเติม</p>
                         </div>
                     )}
                 </div>
