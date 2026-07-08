@@ -10,26 +10,25 @@
     <style>
         body { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: 'Prompt', sans-serif; background-color: transparent; overflow: hidden; }
         
-        /* Master Container (สำหรับเปิด-ปิดจอ) */
+        /* สวิตช์ Master Container (เปิด-ปิดจอ) */
         #master-container {
             width: 100%; height: 100%; display: flex; background-color: #0b132b;
-            transition: opacity 0.6s ease, transform 0.6s ease;
-            transform-origin: center;
+            transition: opacity 0.5s ease, transform 0.5s ease;
         }
-        #master-container.hidden-screen {
-            opacity: 0; transform: scale(0.95); pointer-events: none;
-        }
+        #master-container.hidden-screen { opacity: 0; transform: scale(0.95); pointer-events: none; }
 
         /* รูปภาพ */
         .main-photo { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         
-        /* Animation Classes */
+        /* 1. Fade */
         .anim-fade { transition: opacity 0.8s ease-in-out; opacity: 0; }
         .anim-fade.active { opacity: 1; }
         
+        /* 2. Zoom */
         .anim-zoom { transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94); opacity: 0; transform: scale(1.1); }
         .anim-zoom.active { opacity: 1; transform: scale(1); }
         
+        /* 3. Slide Up */
         .anim-slide { transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(50px); }
         .anim-slide.active { opacity: 1; transform: translateY(0); }
     </style>
@@ -39,25 +38,22 @@
     <div id="master-container">
         <div class="w-[70%] h-full relative bg-black overflow-hidden shadow-2xl z-10">
             <img id="display-photo" class="main-photo anim-fade" src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=1920&q=80">
-            <div class="absolute bottom-0 left-0 w-full p-[60px_40px_40px] bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20">
-                <h1 id="display-name" class="m-0 text-[3.5rem] text-white drop-shadow-[2px_2px_4px_rgba(0,0,0,0.8)] font-bold">ยินดีต้อนรับเข้าสู่งาน</h1>
-                <p id="display-message" class="mt-2 text-[1.8rem] text-slate-200 drop-shadow-md">รอรับรูปภาพจากผู้ร่วมงาน...</p>
+            <div class="absolute bottom-0 left-0 w-full p-[60px_40px_40px] bg-gradient-to-t from-black via-black/60 to-transparent z-20">
+                <h1 id="display-name" class="m-0 text-[3.5rem] text-white drop-shadow-lg font-bold">ยินดีต้อนรับเข้าสู่งาน</h1>
+                <p id="display-message" class="mt-2 text-[1.8rem] text-slate-300 drop-shadow">รอรับรูปภาพจากผู้ร่วมงาน...</p>
             </div>
         </div>
 
-        <div class="w-[30%] h-full bg-white flex flex-col items-center justify-center p-10 border-l-[8px] border-blue-600 relative overflow-hidden">
-            <div class="absolute top-[-50px] right-[-50px] w-40 h-40 bg-blue-100 rounded-full opacity-50"></div>
-            <div class="absolute bottom-[-50px] left-[-50px] w-60 h-60 bg-blue-50 rounded-full opacity-50"></div>
-            
+        <div class="w-[30%] h-full bg-white flex flex-col items-center justify-center p-10 border-l-[8px] border-blue-600 relative">
             <div class="text-center z-10">
                 <h2 class="text-[2.8rem] m-0 text-blue-900 font-bold leading-tight">ส่งรูปขึ้นจอ</h2>
                 <h3 class="text-[2rem] m-0 text-blue-500 font-semibold mb-8">สแกน QR Code</h3>
                 
-                <img class="w-[80%] max-w-[400px] border-[12px] border-slate-50 rounded-3xl shadow-[0_15px_30px_rgba(0,0,0,0.15)] mx-auto mb-8 bg-white" 
+                <img class="w-[80%] max-w-[400px] border-[12px] border-slate-50 rounded-3xl shadow-xl mx-auto mb-8 bg-white" 
                      src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://your-website.com/upload.html">
                 
                 <div class="text-center text-slate-600 text-[1.4rem] leading-relaxed">
-                    <strong class="text-blue-900">📱 สแกนด้วยมือถือ</strong><br>อัปโหลดรูปและข้อความ<br>เพื่อแชร์ความประทับใจ
+                    <strong class="text-blue-900">📱 สแกนด้วยมือถือ</strong><br>อัปโหลดรูป / ใส่ชื่อ<br>รูปของคุณจะขึ้นจอทันที
                 </div>
             </div>
         </div>
@@ -67,7 +63,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-        // 📥 ใส่ Firebase Config
+        // 📥 นำเอา firebaseConfig ของจริงมาใส่ตรงนี้
         const firebaseConfig = {
   apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
   authDomain: "obs-live-photo.firebaseapp.com",
@@ -87,19 +83,14 @@
 
         let currentAnimClass = 'anim-fade';
 
-        // 1. รับคำสั่งซ่อนจอ/เปลี่ยนอนิเมชัน จากหน้า Admin
+        // 1. รับคำสั่งตั้งค่าจอ (ซ่อน/โชว์ และ อนิเมชัน)
         db.collection('settings').doc('display').onSnapshot(doc => {
             if (doc.exists) {
                 const data = doc.data();
                 
-                // สวิตช์ เปิด-ปิด
-                if (data.isVisible === false) {
-                    masterContainer.classList.add('hidden-screen');
-                } else {
-                    masterContainer.classList.remove('hidden-screen');
-                }
+                if (data.isVisible === false) masterContainer.classList.add('hidden-screen');
+                else masterContainer.classList.remove('hidden-screen');
 
-                // เปลี่ยน CSS อนิเมชัน
                 if (data.animation) {
                     photoEl.classList.remove('anim-fade', 'anim-zoom', 'anim-slide');
                     currentAnimClass = `anim-${data.animation}`;
@@ -108,7 +99,7 @@
             }
         });
 
-        // 2. รับคำสั่งเปลี่ยนรูป
+        // 2. ดึงรูปภาพมาแสดงผล
         db.collection('photos').where('status', '==', 'showing').onSnapshot(snapshot => {
             if (snapshot.empty) return;
             
@@ -119,14 +110,12 @@
             });
             
             if (latestData) {
-                photoEl.classList.remove('active'); // สั่งรูปเก่าให้ค่อยๆ หายไป
-                
+                photoEl.classList.remove('active');
                 setTimeout(() => {
                     photoEl.src = latestData.imageUrl;
                     nameEl.innerText = latestData.name;
                     messageEl.innerText = latestData.message;
-                    
-                    photoEl.classList.add('active'); // สั่งรูปใหม่โชว์ขึ้นมา
+                    photoEl.classList.add('active');
                 }, 400); 
             }
         });
