@@ -3,108 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - คุมคิวรูปภาพ</title>
+    <title>PRO Event Dashboard (Real Data)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>
-        body { margin: 0; padding: 0; font-family: 'Prompt', sans-serif; background-color: #0b132b; color: #ffffff; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Sidebar Menu */
-        .sidebar { width: 250px; background-color: #111c3a; padding: 30px 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.5); z-index: 10; }
-        .sidebar h2 { margin-top: 0; font-size: 1.2rem; color: #60a5fa; margin-bottom: 30px; border-bottom: 1px solid #1e3a8a; padding-bottom: 15px; text-align: center; line-height: 1.5; }
-        .menu-item { padding: 15px; margin-bottom: 10px; border-radius: 8px; color: #9ca3af; cursor: pointer; transition: all 0.3s; }
-        .menu-item:hover { background-color: rgba(30, 58, 138, 0.5); color: white; }
-        .menu-item.active { background-color: #1e3a8a; color: #ffffff; font-weight: 500; }
-        
-        /* Main Content & Tabs */
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; background-color: #0b132b; }
-        .tab-content { display: none; } /* ซ่อนทุกหน้าไว้ก่อน */
-        .tab-content.active { display: block; } /* โชว์เฉพาะหน้าที่เลือก */
-        
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #1e3a8a; padding-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 1.8rem; }
-        
-        /* Cards & Lists */
-        .queue-list { display: flex; flex-direction: column; gap: 15px; }
-        .queue-item { background-color: #111c3a; border-radius: 12px; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-left: 4px solid transparent; }
-        .queue-item.status-waiting { border-left-color: #f59e0b; }
-        .queue-item.status-showing { border-left-color: #10b981; opacity: 0.8; }
-        
-        .sender-info { display: flex; align-items: center; gap: 20px; }
-        .sender-info img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 2px solid #3b82f6; }
-        .sender-details h3 { margin: 0 0 5px 0; font-size: 1.2rem; }
-        .sender-details p { margin: 0; color: #9ca3af; font-size: 0.9rem; }
-        
-        /* Buttons */
-        .btn-show { background-color: #10b981; color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-family: 'Prompt', sans-serif; font-size: 1rem; font-weight: 600; transition: background 0.3s; }
-        .btn-show:hover { background-color: #059669; }
-        .btn-danger { background-color: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-family: 'Prompt', sans-serif; font-size: 1rem; font-weight: 600; }
-        
-        /* Dashboard Stats */
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background-color: #111c3a; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .stat-card h3 { margin: 0; color: #9ca3af; font-size: 1rem; font-weight: 400; }
-        .stat-card .num { font-size: 2.5rem; font-weight: 600; color: #60a5fa; margin: 10px 0 0 0; }
-    </style>
-</head>
-<body>
-
-    <div class="sidebar">
-        <h2>ระบบสแกน QR Code<br><span style="font-size: 0.9rem; color: #9ca3af;">Admin Dashboard</span></h2>
-        <div class="menu-item" onclick="switchTab('home', this)">🏠 หน้าหลัก</div>
-        <div class="menu-item active" onclick="switchTab('queue', this)">⏳ คิวรูปภาพ (รอแสดง)</div>
-        <div class="menu-item" onclick="switchTab('current', this)">▶️ กำลังแสดง (ปัจจุบัน)</div>
-        <div class="menu-item" onclick="switchTab('history', this)">🕒 ประวัติการแสดงผล</div>
-        <div class="menu-item" onclick="switchTab('settings', this)">⚙️ ตั้งค่าระบบ</div>
-    </div>
-
-    <div class="main-content">
-        
-        <div id="tab-home" class="tab-content">
-            <div class="header"><h1>หน้าหลัก (Overview)</h1></div>
-            <div class="stats-grid">
-                <div class="stat-card"><h3>รูปภาพทั้งหมดในระบบ</h3><p class="num" id="stat-total">0</p></div>
-                <div class="stat-card"><h3>คิวรอแสดงผล</h3><p class="num" id="stat-waiting" style="color: #f59e0b;">0</p></div>
-                <div class="stat-card"><h3>แสดงผลไปแล้ว</h3><p class="num" id="stat-shown" style="color: #10b981;">0</p></div>
-            </div>
-            <p style="color: #9ca3af; text-align: center; margin-top: 50px;">ยินดีต้อนรับสู่ระบบจัดการคิวรูปภาพ<br>เลือกเมนูด้านซ้ายเพื่อเริ่มต้นการทำงาน</p>
-        </div>
-
-        <div id="tab-queue" class="tab-content active">
-            <div class="header"><h1>คิวรูปภาพ (รอแสดง)</h1></div>
-            <div class="queue-list" id="queue-container">
-                <p style="color: #94a3b8; text-align: center; margin-top: 50px;">กำลังโหลดคิว...</p>
-            </div>
-        </div>
-
-        <div id="tab-current" class="tab-content">
-            <div class="header"><h1>กำลังแสดงบนหน้าจอ (ปัจจุบัน)</h1></div>
-            <div class="queue-list" id="current-container">
-                <p style="color: #94a3b8; text-align: center; margin-top: 50px;">ยังไม่มีรูปภาพที่กำลังแสดง</p>
-            </div>
-        </div>
-
-        <div id="tab-history" class="tab-content">
-            <div class="header"><h1>ประวัติการแสดงผล</h1></div>
-            <div class="queue-list" id="history-container">
-                <p style="color: #94a3b8; text-align: center; margin-top: 50px;">ยังไม่มีประวัติการแสดงผล</p>
-            </div>
-        </div>
-
-        <div id="tab-settings" class="tab-content">
-            <div class="header"><h1>ตั้งค่าระบบ</h1></div>
-            <div style="background-color: #111c3a; padding: 30px; border-radius: 12px;">
-                <h3 style="margin-top: 0;">การจัดการฐานข้อมูล</h3>
-                <p style="color: #9ca3af; margin-bottom: 20px;">ระบบจะลบข้อมูลที่อายุเกิน 24 ชั่วโมงโดยอัตโนมัติอยู่แล้ว แต่คุณสามารถกดล้างข้อมูลเก่าด้วยตัวเองได้ที่นี่</p>
-                <button class="btn-danger" onclick="clearOldData()">🗑️ ทำความสะอาดข้อมูลเก่า (เกิน 24 ชม.)</button>
-            </div>
-        </div>
-
-    </div>
-
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    <script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #0f172a; color: white; margin: 0; overflow: hidden; }
+        .canvas-bg { background-image: radial-gradient(#334155 1px, transparent 1px); background-size: 20px 20px; }
+        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
         // 📥 1. ใส่ Firebase Config ของคุณตรงนี้
         const firebaseConfig = {
   apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
@@ -118,156 +41,222 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
 
-        // -----------------------------------------------------
-        // 🎛️ ระบบเปลี่ยนหน้าต่าง (Tab Navigation)
-        // -----------------------------------------------------
-        function switchTab(tabId, menuElement) {
-            // ซ่อนทุกหน้า
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            // เอาสีปุ่มเมนูออกทั้งหมด
-            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-            
-            // โชว์หน้าที่เลือก และ ไฮไลต์เมนู
-            document.getElementById('tab-' + tabId).classList.add('active');
-            menuElement.classList.add('active');
-        }
+        function App() {
+            const [activeMenu, setActiveMenu] = useState('🕒 คิวรอแสดง');
+            const [photos, setPhotos] = useState([]);
+            const [showingPhoto, setShowingPhoto] = useState(null);
+            const [previewPhoto, setPreviewPhoto] = useState(null); // รูปที่กดเลือกมาดูบน Canvas
 
-        // -----------------------------------------------------
-        // 🧹 ระบบทำความสะอาดข้อมูล (เกิน 24 ชม.)
-        // -----------------------------------------------------
-        function clearOldData() {
-            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-            db.collection('photos').where('timestamp', '<', oneDayAgo).get().then((snapshot) => {
-                if(snapshot.empty) {
-                    alert("ไม่มีข้อมูลเก่าที่ค้างเกิน 24 ชั่วโมงครับ");
-                    return;
+            // ดึงข้อมูลทั้งหมดจาก Firebase แบบ Real-time
+            useEffect(() => {
+                const unsubscribe = db.collection('photos')
+                    .orderBy('timestamp', 'asc')
+                    .onSnapshot(snapshot => {
+                        const fetchedPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setPhotos(fetchedPhotos);
+                        
+                        // หาตัวที่กำลังแสดงอยู่
+                        const currentlyShowing = fetchedPhotos.find(p => p.status === 'showing');
+                        setShowingPhoto(currentlyShowing || null);
+                        
+                        // ถ้าไม่มีการพรีวิวรูปอื่น ให้แสดงรูปที่กำลังโชว์อยู่บน Canvas
+                        if (!previewPhoto && currentlyShowing) {
+                            setPreviewPhoto(currentlyShowing);
+                        }
+                    });
+                return () => unsubscribe();
+            }, []);
+
+            // ตัวกรองข้อมูลตามสถานะ
+            const waitingQueue = photos.filter(p => p.status === 'waiting');
+            const historyQueue = photos.filter(p => p.status === 'shown' || p.status === 'rejected');
+            const stats = {
+                total: photos.length,
+                waiting: waitingQueue.length,
+                showing: showingPhoto ? 1 : 0,
+                shown: photos.filter(p => p.status === 'shown').length
+            };
+
+            // ฟังก์ชันดันรูปขึ้นจอ (อัปเดต Firebase)
+            const pushToLive = async (photo) => {
+                if (!photo) return;
+                
+                try {
+                    // 1. เปลี่ยนตัวที่แสดงอยู่ปัจจุบันให้กลายเป็น 'shown'
+                    if (showingPhoto) {
+                        await db.collection('photos').doc(showingPhoto.id).update({ status: 'shown' });
+                    }
+                    // 2. เปลี่ยนตัวที่เลือกให้กลายเป็น 'showing'
+                    await db.collection('photos').doc(photo.id).update({ status: 'showing' });
+                    
+                    alert(`ส่งรูปของ ${photo.name} ขึ้นจอเรียบร้อย!`);
+                } catch (error) {
+                    console.error(error);
+                    alert("เกิดข้อผิดพลาดในการอัปเดตฐานข้อมูล");
                 }
-                let count = 0;
-                snapshot.forEach((doc) => {
-                    doc.ref.delete();
-                    count++;
-                });
-                alert(`ล้างข้อมูลเก่าเรียบร้อยแล้ว จำนวน ${count} รายการ!`);
-            });
-        }
-        
-        // รันทำความสะอาดออโต้ 1 รอบตอนเปิดหน้าเว็บ
-        const oneDayAgoAuto = Date.now() - (24 * 60 * 60 * 1000);
-        db.collection('photos').where('timestamp', '<', oneDayAgoAuto).get().then(snap => snap.forEach(doc => doc.ref.delete()));
+            };
 
-        // -----------------------------------------------------
-        // 📡 ดึงข้อมูลจาก Firebase แบบ Real-time (ครบทุกหน้า)
-        // -----------------------------------------------------
-        db.collection('photos').onSnapshot((snapshot) => {
-            const queueContainer = document.getElementById('queue-container');
-            const currentContainer = document.getElementById('current-container');
-            const historyContainer = document.getElementById('history-container');
-            
-            let waitingDocs = [];
-            let showingDocs = [];
-
-            // นับสถิติสำหรับหน้า Dashboard
-            let total = snapshot.size;
-            let waitingCount = 0;
-            let shownCount = 0;
-
-            snapshot.forEach((doc) => {
-                const data = { id: doc.id, ...doc.data() };
-                if (data.status === 'waiting') {
-                    waitingDocs.push(data);
-                    waitingCount++;
-                } else if (data.status === 'showing') {
-                    showingDocs.push(data);
-                    shownCount++;
+            // ฟังก์ชันปฏิเสธรูป
+            const rejectPhoto = async (photoId) => {
+                if(confirm("แน่ใจหรือไม่ที่จะลบ/ปฏิเสธรูปนี้?")) {
+                    await db.collection('photos').doc(photoId).update({ status: 'rejected' });
+                    if(previewPhoto && previewPhoto.id === photoId) setPreviewPhoto(null);
                 }
-            });
+            };
 
-            // อัปเดตตัวเลขหน้าหลัก (Dashboard)
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-waiting').innerText = waitingCount;
-            document.getElementById('stat-shown').innerText = shownCount;
+            const formatTime = (ts) => {
+                if(!ts) return '';
+                // รองรับทั้ง Timestamp แบบตัวเลข และแบบ Firebase Object
+                const date = typeof ts === 'number' ? new Date(ts) : ts.toDate();
+                return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            };
 
-            // --- 1. จัดการหน้าคิว (Queue) ---
-            waitingDocs.sort((a, b) => a.timestamp - b.timestamp); // เรียงเก่าไปใหม่
-            if (waitingDocs.length === 0) {
-                queueContainer.innerHTML = '<p style="color: #94a3b8; text-align: center; margin-top: 50px;">✅ ไม่มีคิวตกค้าง รอรับรูปใหม่...</p>';
-            } else {
-                queueContainer.innerHTML = '';
-                waitingDocs.forEach(data => {
-                    const timeStr = new Date(data.timestamp).toLocaleTimeString('th-TH');
-                    queueContainer.innerHTML += `
-                        <div class="queue-item status-waiting">
-                            <div class="sender-info">
-                                <img src="${data.imageUrl}" alt="Thumb">
-                                <div class="sender-details">
-                                    <h3>${data.name}</h3>
-                                    <p>${data.message} | 🕒 ${timeStr}</p>
+            return (
+                <div className="flex h-screen w-full">
+                    {/* Sidebar */}
+                    <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-10 shadow-xl">
+                        <div className="p-5 border-b border-slate-800">
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">QR Live Display</h1>
+                            <div className="mt-3 text-xs space-y-2">
+                                <div className="flex items-center text-emerald-400"><span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 shadow-[0_0_8px_#34d399]"></span> Database Connected</div>
+                            </div>
+                        </div>
+                        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+                            {['🏠 Dashboard', '🕒 คิวรอแสดง', '▶️ กำลังแสดง', '✅ ประวัติ (แสดงแล้ว)', '⚙️ ตั้งค่า'].map(menu => (
+                                <div 
+                                    key={menu} 
+                                    onClick={() => setActiveMenu(menu)}
+                                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 font-medium ${activeMenu === menu ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    {menu}
                                 </div>
-                            </div>
-                            <button class="btn-show" onclick="pushToScreen('${data.id}')">แสดงขึ้นจอ</button>
-                        </div>
-                    `;
-                });
-            }
-
-            // --- 2. จัดการหน้าปัจจุบัน (Current) & ประวัติ (History) ---
-            showingDocs.sort((a, b) => b.timestamp - a.timestamp); // เรียงใหม่ไปเก่า
-            
-            if (showingDocs.length === 0) {
-                currentContainer.innerHTML = '<p style="color: #94a3b8; text-align: center; margin-top: 50px;">ยังไม่มีรูปที่ถูกแสดง</p>';
-                historyContainer.innerHTML = '<p style="color: #94a3b8; text-align: center; margin-top: 50px;">ยังไม่มีประวัติ</p>';
-            } else {
-                // รูปบนสุดคือรูปที่กำลังแสดงปัจจุบัน
-                const currentData = showingDocs[0];
-                const currentTime = new Date(currentData.timestamp).toLocaleTimeString('th-TH');
-                currentContainer.innerHTML = `
-                    <div class="queue-item status-showing" style="border: 2px solid #10b981;">
-                        <div class="sender-info">
-                            <img src="${currentData.imageUrl}" alt="Thumb">
-                            <div class="sender-details">
-                                <h3>${currentData.name}</h3>
-                                <p>${currentData.message} | 🕒 ส่งเมื่อ ${currentTime}</p>
-                            </div>
-                        </div>
-                        <div style="color: #10b981; font-weight: bold;">กำลังแสดงอยู่ 📺</div>
+                            ))}
+                        </nav>
                     </div>
-                `;
 
-                // รูปที่เหลือและรูปปัจจุบันเข้าหน้าประวัติ
-                historyContainer.innerHTML = '';
-                showingDocs.forEach(data => {
-                    const timeStr = new Date(data.timestamp).toLocaleTimeString('th-TH');
-                    historyContainer.innerHTML += `
-                        <div class="queue-item status-showing">
-                            <div class="sender-info">
-                                <img src="${data.imageUrl}" alt="Thumb" style="filter: grayscale(30%);">
-                                <div class="sender-details">
-                                    <h3 style="color: #9ca3af;">${data.name}</h3>
-                                    <p>แสดงผลแล้ว | 🕒 ${timeStr}</p>
+                    {/* Main Content */}
+                    <div className="flex-1 flex flex-col overflow-hidden bg-slate-950">
+                        
+                        {/* Stats Header */}
+                        <div className="grid grid-cols-4 gap-4 p-5 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm">
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="text-slate-400 text-sm font-medium">จำนวนรูปวันนี้</div>
+                                <div className="text-3xl font-bold text-white mt-1">{stats.total}</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="text-amber-400 text-sm font-medium">รอคิว</div>
+                                <div className="text-3xl font-bold text-amber-400 mt-1">{stats.waiting}</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full blur-2xl"></div>
+                                <div className="text-emerald-400 text-sm font-medium">กำลังแสดง</div>
+                                <div className="text-3xl font-bold text-emerald-400 mt-1">{stats.showing}</div>
+                            </div>
+                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                                <div className="text-blue-400 text-sm font-medium">แสดงแล้ว</div>
+                                <div className="text-3xl font-bold text-blue-400 mt-1">{stats.shown}</div>
+                            </div>
+                        </div>
+
+                        {/* Middle: Canvas & List */}
+                        <div className="flex-1 flex overflow-hidden">
+                            
+                            {/* Left: Canvas Area */}
+                            <div className="flex-[2] flex flex-col p-5 border-r border-slate-800">
+                                <h3 className="font-semibold text-slate-300 mb-4 flex justify-between items-center">
+                                    <span>Live Canvas (Preview LED)</span>
+                                    {previewPhoto && previewPhoto.status !== 'showing' && (
+                                        <button 
+                                            onClick={() => pushToLive(previewPhoto)}
+                                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-emerald-900/20 transition-all">
+                                            🚀 ส่งขึ้นจอ OBS ทันที
+                                        </button>
+                                    )}
+                                </h3>
+                                
+                                <div className="flex-1 canvas-bg flex items-center justify-center rounded-xl border border-slate-800 relative overflow-hidden">
+                                    {previewPhoto ? (
+                                        <div className="aspect-video w-full max-w-3xl bg-black border border-slate-700 shadow-2xl flex relative overflow-hidden ring-4 ring-black/50">
+                                            <div className="w-[70%] h-full relative">
+                                                <img src={previewPhoto.imageUrl} className="w-full h-full object-cover" />
+                                                <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
+                                                    <h2 className="text-4xl font-bold text-white drop-shadow-lg">{previewPhoto.name}</h2>
+                                                    <p className="text-xl text-slate-300 mt-2">{previewPhoto.message}</p>
+                                                </div>
+                                            </div>
+                                            <div className="w-[30%] h-full bg-white flex flex-col items-center justify-center">
+                                                <div className="text-center text-blue-900 font-bold text-xl mb-4">สแกนส่งรูป</div>
+                                                <div className="w-40 h-40 bg-gray-100 border-8 border-gray-100 rounded-xl shadow-sm flex items-center justify-center">
+                                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://your-website.com" className="w-full h-full" />
+                                                </div>
+                                            </div>
+                                            {/* Badge บอกสถานะบน Canvas */}
+                                            {previewPhoto.status === 'showing' && (
+                                                <div className="absolute top-4 left-4 px-3 py-1 bg-emerald-500 text-white text-sm font-bold rounded-full flex items-center gap-2 shadow-lg">
+                                                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span> กำลังแสดงบนจอ
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-slate-500 flex flex-col items-center">
+                                            <span className="text-4xl mb-2">📸</span>
+                                            <p>คลิกเลือกรูปจากรายการด้านขวาเพื่อพรีวิว</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right: Dynamic List based on Active Menu */}
+                            <div className="flex-1 bg-slate-900/50 flex flex-col p-5">
+                                <h3 className="font-semibold text-white mb-4 border-b border-slate-800 pb-2">{activeMenu}</h3>
+                                
+                                <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                                    {activeMenu === '🕒 คิวรอแสดง' && waitingQueue.length === 0 && <p className="text-slate-500 text-center mt-10">ไม่มีคิวรอแสดง</p>}
+                                    {activeMenu === '🕒 คิวรอแสดง' && waitingQueue.map(item => (
+                                        <div key={item.id} 
+                                            onClick={() => setPreviewPhoto(item)}
+                                            className={`bg-slate-800 p-3 rounded-xl border cursor-pointer transition-all ${previewPhoto?.id === item.id ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'border-slate-700 hover:border-slate-500'}`}>
+                                            <div className="flex gap-4">
+                                                <img src={item.imageUrl} className="w-20 h-20 rounded-lg object-cover bg-slate-900" />
+                                                <div className="flex-1 flex flex-col justify-center">
+                                                    <div className="font-bold text-white text-lg">{item.name}</div>
+                                                    <div className="text-sm text-slate-400 mt-1">เวลา: {formatTime(item.timestamp)}</div>
+                                                </div>
+                                                <div className="flex flex-col gap-2 justify-center">
+                                                    <button onClick={(e) => { e.stopPropagation(); pushToLive(item); }} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-xs text-white rounded">แสดง</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); rejectPhoto(item.id); }} className="px-3 py-1 bg-red-900/50 hover:bg-red-500 text-xs text-red-200 rounded">ลบ</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {activeMenu === '✅ ประวัติ (แสดงแล้ว)' && historyQueue.map(item => (
+                                        <div key={item.id} 
+                                            onClick={() => setPreviewPhoto(item)}
+                                            className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex gap-4 cursor-pointer hover:bg-slate-800 opacity-70 hover:opacity-100 transition-opacity">
+                                            <img src={item.imageUrl} className="w-16 h-16 rounded-lg object-cover grayscale" />
+                                            <div className="flex-1">
+                                                <div className="font-bold text-slate-300">{item.name}</div>
+                                                <div className="text-xs text-slate-500">สถานะ: {item.status === 'shown' ? 'แสดงแล้ว' : 'ปฏิเสธ'}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    
+                                    {activeMenu !== '🕒 คิวรอแสดง' && activeMenu !== '✅ ประวัติ (แสดงแล้ว)' && (
+                                        <div className="text-slate-500 text-center mt-10 p-5 bg-slate-800/30 rounded-xl border border-slate-800 border-dashed">
+                                            เมนู {activeMenu} ยังไม่เปิดใช้งานในเวอร์ชัน MVP
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    `;
-                });
-            }
-        });
 
-        // -----------------------------------------------------
-        // 🚀 ฟังก์ชันแสดงขึ้นจอ (ย้ายสถานะ waiting -> showing)
-        // -----------------------------------------------------
-        async function pushToScreen(docId) {
-            try {
-                await db.collection('photos').doc(docId).update({
-                    status: 'showing',
-                    timestamp: Date.now() // อัปเดตเวลาใหม่ตอนที่กดโชว์ จะได้ดึงไปหน้า OBS ถูกต้อง
-                });
-                // เด้งไปหน้า "กำลังแสดง" ให้เห็นทันที
-                switchTab('current', document.querySelectorAll('.menu-item')[2]);
-            } catch (error) {
-                console.error(error);
-                alert('เกิดข้อผิดพลาดในการแสดงผล');
-            }
+                    </div>
+                </div>
+            );
         }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
