@@ -3,98 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Dock Control</title>
-    
+    <title>OBS Pro Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { obs: '#2B2B2B', obsDark: '#1E1E1E', obsHover: '#3C3C3C' },
+                    colors: { bgDark: '#0f172a', bgCard: '#1e293b', primary: '#3b82f6' },
                     fontFamily: { sans: ['Prompt', 'sans-serif'] }
                 }
             }
         }
     </script>
-    
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <style>
-        body { background-color: #1E1E1E; color: #CCCCCC; overflow-x: hidden; user-select: none; }
-        /* ปรับ Scrollbar ให้เล็กและเนียนตาแบบ OBS */
+        body { background-color: #0f172a; color: #f1f5f9; overflow-x: hidden; user-select: none; }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #1E1E1E; }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #777; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
         
-        .tab-btn.active { background-color: #2B2B2B; color: #4FA8FF; border-bottom: 2px solid #4FA8FF; font-weight: 600; }
-        .toggle-checkbox:checked { right: 0; border-color: #4FA8FF; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #4FA8FF; }
+        /* Toggle Switch UI */
+        .toggle-checkbox:checked { right: 0; border-color: #3b82f6; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #3b82f6; }
+        .master-toggle:checked + .toggle-label { background-color: #10b981; } /* สีเขียวสำหรับ Master Switch */
+
+        .tab-btn { border-bottom: 2px solid transparent; transition: all 0.3s; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; font-weight: 600; }
     </style>
 </head>
 <body class="flex flex-col h-screen text-sm">
 
-    <div class="bg-obs border-b border-[#111] p-3 shadow-md z-10 flex justify-between items-center">
+    <div class="bg-bgCard border-b border-slate-700/50 p-4 shadow-lg flex justify-between items-center z-20">
         <div>
-            <h1 class="font-bold text-gray-100 text-base leading-tight">Live Photo</h1>
-            <span class="text-[10px] text-emerald-400 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Online
-            </span>
+            <h1 class="font-bold text-white text-lg tracking-wide uppercase">Control<span class="text-primary">Panel</span></h1>
+            <p class="text-[10px] text-emerald-400 mt-0.5 flex items-center gap-1"><span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> Database Active</p>
         </div>
-        
-        <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-400" id="autoplay-text">Auto (10s)</span>
-            <div class="relative inline-block w-8 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input type="checkbox" name="toggle" id="autoplay-toggle" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300" style="top: 2px; left: 2px; z-index: 2;"/>
-                <label for="autoplay-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-600 cursor-pointer transition-colors duration-300"></label>
+        <div class="flex flex-col items-end">
+            <span class="text-[10px] text-slate-400 font-semibold mb-1 uppercase tracking-wider" id="master-status-text">การแสดงผลจอ OBS</span>
+            <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input type="checkbox" id="master-switch" class="toggle-checkbox master-toggle absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300" style="top: 2px; left: 2px; z-index: 2;" checked/>
+                <label for="master-switch" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300"></label>
             </div>
         </div>
     </div>
 
-    <div class="bg-blue-900/20 border-b border-blue-900/50 p-3 hidden" id="now-showing-container">
-        <div class="text-[10px] font-bold text-blue-400 mb-1 flex items-center justify-between">
-            <span>▶️ กำลังแสดงผลบนจอ</span>
-            <button onclick="clearScreen()" class="text-gray-500 hover:text-red-400 px-1 rounded">ล้างหน้าจอ</button>
-        </div>
-        <div class="flex items-center gap-3">
-            <img id="live-img" src="" class="w-12 h-12 object-cover rounded border border-blue-500/50 shadow-lg">
-            <div class="flex-1 overflow-hidden">
-                <div id="live-name" class="text-white font-semibold truncate text-sm"></div>
-                <div id="live-msg" class="text-gray-400 text-xs truncate"></div>
+    <div class="bg-bgDark p-4 border-b border-slate-800">
+        <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+            
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-700/50">
+                <div class="flex items-center gap-2">
+                    <div class="relative inline-block w-8 align-middle select-none">
+                        <input type="checkbox" id="autoplay-switch" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300" style="top: 2px; left: 2px; z-index: 2;"/>
+                        <label for="autoplay-switch" class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer transition-colors duration-300"></label>
+                    </div>
+                    <span class="font-semibold text-slate-200 text-sm">ระบบเล่นภาพอัตโนมัติ</span>
+                </div>
+                <select id="timer-select" class="bg-slate-900 border border-slate-600 text-xs rounded-lg px-2 py-1 outline-none text-slate-300 focus:border-primary">
+                    <option value="5">ทุก 5 วินาที</option>
+                    <option value="10" selected>ทุก 10 วินาที</option>
+                    <option value="15">ทุก 15 วินาที</option>
+                    <option value="30">ทุก 30 วินาที</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-slate-400 uppercase font-semibold block mb-1">หมวดการเล่น (Loop)</label>
+                    <select id="loop-mode" class="w-full bg-slate-900 border border-slate-600 text-xs rounded-lg px-2 py-1.5 outline-none text-slate-300 focus:border-primary">
+                        <option value="queue">แสดงเฉพาะรูปใหม่</option>
+                        <option value="all">วนรูปทั้งหมดในงาน</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 uppercase font-semibold block mb-1">อนิเมชัน (Animation)</label>
+                    <select id="anim-select" class="w-full bg-slate-900 border border-slate-600 text-xs rounded-lg px-2 py-1.5 outline-none text-slate-300 focus:border-primary">
+                        <option value="fade">Fade (ละมุน)</option>
+                        <option value="zoom">Zoom (พุ่งเข้า)</option>
+                        <option value="slide">Slide (เลื่อนขึ้น)</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="flex bg-obsDark border-b border-[#111]">
-        <button onclick="switchTab('queue')" id="tab-queue" class="tab-btn active flex-1 py-2 text-center transition-colors">รอคิว (<span id="queue-count">0</span>)</button>
-        <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 py-2 text-center text-gray-400 transition-colors">ประวัติ</button>
-    </div>
-
-    <div class="flex-1 overflow-y-auto bg-obs relative">
-        
-        <div id="queue-view" class="block">
-            <div id="queue-list" class="flex flex-col">
-                <div class="text-center text-gray-500 py-10 text-xs">กำลังโหลดข้อมูล...</div>
+    <div class="px-4 py-2 bg-bgDark" id="preview-container">
+        <div class="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider flex justify-between">
+            <span>กำลังแสดงบนจอ</span>
+        </div>
+        <div class="relative rounded-lg overflow-hidden border border-primary shadow-[0_0_10px_rgba(59,130,246,0.2)]">
+            <img id="live-img" src="" class="w-full h-20 object-cover opacity-80">
+            <div class="absolute bottom-0 w-full bg-gradient-to-t from-slate-900/90 p-2">
+                <div id="live-name" class="font-bold text-white text-xs truncate">...</div>
             </div>
         </div>
-
-        <div id="history-view" class="hidden">
-            <div id="history-list" class="flex flex-col"></div>
-        </div>
-
     </div>
 
-    <div class="bg-obsDark border-t border-[#111] p-2">
-        <button onclick="autoCleanUp()" class="w-full py-1.5 bg-obsHover hover:bg-red-900/50 text-gray-400 hover:text-red-400 rounded text-xs transition-colors border border-[#444] hover:border-red-900">
-            🗑️ ลบข้อมูลที่เก่าเกิน 24 ชม.
-        </button>
+    <div class="flex bg-bgCard border-b border-slate-800 mt-2">
+        <button onclick="switchTab('queue')" id="tab-queue" class="tab-btn flex-1 py-3 text-center tab-active hover:text-slate-200">รอคิว (<span id="queue-count">0</span>)</button>
+        <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 py-3 text-center text-slate-400 hover:text-slate-200">ประวัติ (<span id="history-count">0</span>)</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto bg-bgDark p-2 pb-10" id="list-container">
+        <div id="queue-list" class="space-y-2"></div>
+        <div id="history-list" class="space-y-2 hidden"></div>
     </div>
 
     <script>
-        // 📥 นำเอา firebaseConfig มาใส่ตรงนี้
+        // 📥 ใส่ Firebase Config
         const firebaseConfig = {
   apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
   authDomain: "obs-live-photo.firebaseapp.com",
@@ -104,164 +124,173 @@
   appId: "1:410755111325:web:814ca02445f4305267f774"
 };
 
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // ตัวแปรเก็บสถานะ (State)
+        // State Variables
         let queueData = [];
+        let historyData = [];
         let showingData = null;
-        let isAutoPlay = false;
-        let autoPlayInterval = null;
+        let autoPlayIntervalId = null;
+        let currentLoopIndex = 0;
 
-        const queueList = document.getElementById('queue-list');
-        const historyList = document.getElementById('history-list');
-        const nowShowingContainer = document.getElementById('now-showing-container');
+        // 1. จัดการ Master Switch & Animation (ยิงคำสั่งไปหา index.html)
+        const masterSwitch = document.getElementById('master-switch');
+        const animSelect = document.getElementById('anim-select');
 
-        // ฟังก์ชันลบข้อมูลเกิน 24 ชม
-        function autoCleanUp() {
-            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-            db.collection('photos').where('timestamp', '<', oneDayAgo).get().then(snapshot => {
-                let count = 0;
-                snapshot.forEach(doc => { doc.ref.delete(); count++; });
-                if(count > 0) alert(`ทำความสะอาดข้อมูลเก่าไป ${count} รายการ`);
-            });
-        }
-        autoCleanUp(); // รัน 1 ครั้งตอนเปิดหน้า
+        masterSwitch.addEventListener('change', (e) => {
+            document.getElementById('master-status-text').innerText = e.target.checked ? 'การแสดงผลจอ OBS (เปิด)' : 'การแสดงผลจอ OBS (ปิด)';
+            db.collection('settings').doc('display').set({ isVisible: e.target.checked }, { merge: true });
+        });
 
-        // ดึงข้อมูล "กำลังแสดง" (Showing)
-        db.collection('photos').where('status', '==', 'showing').onSnapshot(snapshot => {
-            if (snapshot.empty) {
-                showingData = null;
-                nowShowingContainer.classList.add('hidden');
-                return;
-            }
-            
-            // หาตัวใหม่สุดเผื่อมีบัคซ้อนกัน
-            let latest = null;
-            snapshot.forEach(doc => {
+        animSelect.addEventListener('change', (e) => {
+            db.collection('settings').doc('display').set({ animation: e.target.value }, { merge: true });
+        });
+
+        // โหลดค่าเริ่มต้น
+        db.collection('settings').doc('display').get().then(doc => {
+            if (doc.exists) {
                 const data = doc.data();
-                if (!latest || data.timestamp > latest.timestamp) latest = { id: doc.id, ...data };
-            });
-
-            showingData = latest;
-            document.getElementById('live-img').src = latest.imageUrl;
-            document.getElementById('live-name').innerText = latest.name;
-            document.getElementById('live-msg').innerText = latest.message;
-            nowShowingContainer.classList.remove('hidden');
+                if(data.isVisible !== undefined) masterSwitch.checked = data.isVisible;
+                if(data.animation) animSelect.value = data.animation;
+                masterSwitch.dispatchEvent(new Event('change'));
+            }
         });
 
-        // ดึงข้อมูล "รอคิว" (Waiting)
-        db.collection('photos').where('status', '==', 'waiting').onSnapshot(snapshot => {
+        // 2. ดึงข้อมูลรูปภาพแบบ Real-time
+        db.collection('photos').onSnapshot(snapshot => {
             queueData = [];
-            snapshot.forEach(doc => queueData.push({ id: doc.id, ...doc.data() }));
+            historyData = [];
+            let currentShowing = null;
             
-            // เรียงจากเก่าไปใหม่
-            queueData.sort((a, b) => a.timestamp - b.timestamp);
+            snapshot.forEach(doc => {
+                const item = { id: doc.id, ...doc.data() };
+                if (item.status === 'showing') {
+                    currentShowing = item;
+                } else if (item.status === 'waiting') {
+                    queueData.push(item);
+                } else if (item.status === 'shown') {
+                    historyData.push(item);
+                }
+            });
+
+            // อัปเดต Preview กล่องเล็ก
+            if (currentShowing) {
+                showingData = currentShowing;
+                document.getElementById('live-img').src = currentShowing.imageUrl;
+                document.getElementById('live-name').innerText = currentShowing.name;
+                document.getElementById('preview-container').style.display = 'block';
+            } else {
+                showingData = null;
+                document.getElementById('preview-container').style.display = 'none';
+            }
+
+            // จัดเรียง
+            queueData.sort((a, b) => a.timestamp - b.timestamp); // คิวเรียงเก่าไปใหม่
+            historyData.sort((a, b) => b.timestamp - a.timestamp); // ประวัติเรียงใหม่ไปเก่า (ล่าสุดอยู่บน)
+
             document.getElementById('queue-count').innerText = queueData.length;
+            document.getElementById('history-count').innerText = historyData.length;
 
+            renderQueue();
+            renderHistory();
+        });
+
+        // 3. Render HTML สำหรับคิว และ ประวัติ
+        function renderQueue() {
+            const list = document.getElementById('queue-list');
             if (queueData.length === 0) {
-                queueList.innerHTML = '<div class="text-center text-gray-500 py-10 text-xs">ไม่มีคิวรอแสดง...</div>';
-                return;
+                list.innerHTML = '<div class="text-center text-slate-500 py-8 text-xs">ไม่มีรูปในคิว</div>'; return;
             }
-
-            queueList.innerHTML = '';
-            queueData.forEach(item => {
-                const timeStr = new Date(item.timestamp).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
-                queueList.innerHTML += `
-                    <div class="flex items-center gap-3 p-3 border-b border-[#333] hover:bg-obsHover group">
-                        <img src="${item.imageUrl}" class="w-14 h-14 object-cover rounded bg-[#111]">
-                        <div class="flex-1 overflow-hidden">
-                            <div class="text-gray-200 font-semibold text-sm truncate">${item.name}</div>
-                            <div class="text-gray-500 text-[10px]">${timeStr}</div>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <button onclick="pushToLive('${item.id}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-1 rounded transition-colors">ขึ้นจอ</button>
-                            <button onclick="rejectPhoto('${item.id}')" class="bg-transparent hover:bg-red-500/20 text-gray-500 hover:text-red-400 border border-transparent hover:border-red-500/50 text-xs px-2 py-0.5 rounded transition-colors">ลบ</button>
-                        </div>
+            list.innerHTML = queueData.map(item => `
+                <div class="bg-slate-800 rounded-xl p-2.5 flex items-center gap-3 border border-slate-700 hover:border-slate-500 transition shadow-sm">
+                    <img src="${item.imageUrl}" class="w-12 h-12 rounded-lg object-cover bg-slate-900">
+                    <div class="flex-1 overflow-hidden">
+                        <div class="font-semibold text-slate-200 text-sm truncate">${item.name}</div>
                     </div>
-                `;
-            });
-        });
+                    <div class="flex flex-col gap-1.5">
+                        <button onclick="pushToLive('${item.id}')" class="bg-primary hover:bg-blue-500 text-white text-xs font-medium px-3 py-1 rounded transition">แสดง</button>
+                        <button onclick="deletePhoto('${item.id}')" class="text-slate-500 hover:text-red-400 text-[10px] text-right pr-1 transition">ลบทิ้ง</button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-        // ดึงข้อมูล "ประวัติ" (Shown) - จำกัดแค่ 20 รูปล่าสุดเพื่อไม่ให้หน่วง
-        db.collection('photos').where('status', '==', 'shown').onSnapshot(snapshot => {
-            let historyData = [];
-            snapshot.forEach(doc => historyData.push({ id: doc.id, ...doc.data() }));
-            historyData.sort((a, b) => b.timestamp - a.timestamp); // เรียงใหม่ไปเก่า
-
+        function renderHistory() {
+            const list = document.getElementById('history-list');
             if (historyData.length === 0) {
-                historyList.innerHTML = '<div class="text-center text-gray-500 py-10 text-xs">ยังไม่มีประวัติการแสดงผล</div>';
-                return;
+                list.innerHTML = '<div class="text-center text-slate-500 py-8 text-xs">ไม่มีประวัติ</div>'; return;
             }
-
-            historyList.innerHTML = '';
-            historyData.slice(0, 20).forEach(item => {
-                historyList.innerHTML += `
-                    <div class="flex items-center gap-3 p-3 border-b border-[#333] opacity-60 hover:opacity-100 transition-opacity">
-                        <img src="${item.imageUrl}" class="w-10 h-10 object-cover rounded grayscale">
-                        <div class="flex-1 overflow-hidden">
-                            <div class="text-gray-300 text-xs truncate">${item.name}</div>
-                        </div>
-                        <button onclick="pushToLive('${item.id}')" class="text-[10px] px-2 py-1 bg-obsHover hover:bg-[#444] rounded text-gray-300 border border-[#444]">แสดงอีกครั้ง</button>
+            list.innerHTML = historyData.map(item => `
+                <div class="bg-slate-800/50 rounded-xl p-2 flex items-center gap-3 border border-slate-700/50">
+                    <img src="${item.imageUrl}" class="w-10 h-10 rounded-lg object-cover opacity-70">
+                    <div class="flex-1 overflow-hidden">
+                        <div class="text-xs truncate text-slate-400">${item.name}</div>
                     </div>
-                `;
-            });
-        });
+                    <button onclick="pushToLive('${item.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] px-2 py-1 rounded transition">โชว์ซ้ำ</button>
+                </div>
+            `).join('');
+        }
 
-        // ฟังก์ชันสั่งขึ้นจอ
+        // 4. ฟังก์ชันจัดการ Database
         async function pushToLive(docId) {
             try {
-                // ถ้ามีตัวแสดงอยู่ ให้เปลี่ยนเป็น shown ก่อน
                 if (showingData) await db.collection('photos').doc(showingData.id).update({ status: 'shown' });
-                // ดันตัวใหม่ขึ้น showing
                 await db.collection('photos').doc(docId).update({ status: 'showing' });
             } catch (err) { console.error(err); }
         }
 
-        // ฟังก์ชันลบรูป (ถ้าคนส่งรูปแปลกๆ มา)
-        async function rejectPhoto(docId) {
-            if(confirm("ต้องการลบรูปนี้ทิ้งใช่ไหม?")) {
-                await db.collection('photos').doc(docId).delete();
-            }
+        async function deletePhoto(docId) {
+            if(confirm("ลบรูปนี้ทิ้งถาวร?")) await db.collection('photos').doc(docId).delete();
         }
 
-        // ฟังก์ชันล้างหน้าจอ (ซ่อนรูปทั้งหมด)
-        async function clearScreen() {
-            if(showingData) {
-                await db.collection('photos').doc(showingData.id).update({ status: 'shown' });
-            }
-        }
-
-        // ระบบ Auto Play
-        const toggleBtn = document.getElementById('autoplay-toggle');
-        const toggleText = document.getElementById('autoplay-text');
-
-        toggleBtn.addEventListener('change', (e) => {
-            isAutoPlay = e.target.checked;
-            if (isAutoPlay) {
-                toggleText.classList.replace('text-gray-400', 'text-blue-400');
-                // ตั้งเวลาดึงคิวที่เก่าที่สุด (ตัวแรกใน Array) ขึ้นจอ ทุกๆ 10 วินาที
-                autoPlayInterval = setInterval(() => {
-                    if (queueData.length > 0) {
-                        pushToLive(queueData[0].id);
-                    }
-                }, 10000); 
-            } else {
-                toggleText.classList.replace('text-blue-400', 'text-gray-400');
-                clearInterval(autoPlayInterval);
-            }
-        });
-
-        // ฟังก์ชันสลับ Tab
+        // 5. จัดการ Tabs
         function switchTab(tab) {
-            document.getElementById('tab-queue').classList.toggle('active', tab === 'queue');
-            document.getElementById('tab-queue').classList.toggle('text-gray-400', tab !== 'queue');
-            document.getElementById('tab-history').classList.toggle('active', tab === 'history');
-            document.getElementById('tab-history').classList.toggle('text-gray-400', tab !== 'history');
+            document.getElementById('tab-queue').className = tab === 'queue' ? 'tab-btn flex-1 py-3 text-center tab-active transition' : 'tab-btn flex-1 py-3 text-center text-slate-400 transition hover:text-slate-200';
+            document.getElementById('tab-history').className = tab === 'history' ? 'tab-btn flex-1 py-3 text-center tab-active transition' : 'tab-btn flex-1 py-3 text-center text-slate-400 transition hover:text-slate-200';
             
-            document.getElementById('queue-view').classList.toggle('hidden', tab !== 'queue');
-            document.getElementById('history-view').classList.toggle('hidden', tab !== 'history');
+            document.getElementById('queue-list').style.display = tab === 'queue' ? 'block' : 'none';
+            document.getElementById('history-list').style.display = tab === 'history' ? 'block' : 'none';
         }
+
+        // 6. ระบบ Auto Play & วนลูป (Loop Mode)
+        const autoplaySwitch = document.getElementById('autoplay-switch');
+        const timerSelect = document.getElementById('timer-select');
+        const loopModeSelect = document.getElementById('loop-mode');
+
+        function manageAutoPlay() {
+            clearInterval(autoPlayIntervalId); // ล้างเวลาเดิมทิ้งก่อน
+            
+            if (autoplaySwitch.checked) {
+                const intervalMs = parseInt(timerSelect.value) * 1000;
+                
+                autoPlayIntervalId = setInterval(() => {
+                    const mode = loopModeSelect.value;
+                    
+                    if (mode === 'queue' && queueData.length > 0) {
+                        // โหมด: ดึงเฉพาะคิวใหม่
+                        pushToLive(queueData[0].id);
+                    } 
+                    else if (mode === 'all') {
+                        // โหมด: วนรูปทั้งหมด (คิว + ประวัติ + รูปปัจจุบัน)
+                        const allPhotos = [...queueData, ...historyData];
+                        if (showingData) allPhotos.push(showingData);
+                        
+                        // เรียงตามเวลาเพื่อให้วนตามลำดับการส่ง
+                        allPhotos.sort((a, b) => a.timestamp - b.timestamp);
+                        
+                        if (allPhotos.length > 0) {
+                            currentLoopIndex = (currentLoopIndex + 1) % allPhotos.length;
+                            pushToLive(allPhotos[currentLoopIndex].id);
+                        }
+                    }
+                }, intervalMs);
+            }
+        }
+
+        autoplaySwitch.addEventListener('change', manageAutoPlay);
+        timerSelect.addEventListener('change', manageAutoPlay);
+        loopModeSelect.addEventListener('change', manageAutoPlay);
     </script>
 </body>
 </html>
