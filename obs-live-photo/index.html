@@ -43,16 +43,15 @@
         .anim-slide { transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(40px); }
         .anim-slide.active { opacity: 1; transform: translateY(0); }
 
-        /* 🌟 ปรับปรุงกรอบข้อความให้เล็กลง และยืดหดตามตัวอักษร */
         .photo-overlay { 
             position: absolute; 
             bottom: 30px; 
             left: 50%; 
             transform: translateX(-50%); 
-            width: auto; /* เปลี่ยนจาก 85% เป็น auto */
+            width: auto; 
             min-width: 40%;
-            max-width: 80%; /* ไม่ให้กว้างเกินขอบจอ */
-            padding: 15px 40px; /* ลดกรอบบน-ล่างให้บางลง */
+            max-width: 80%;
+            padding: 15px 40px; 
             background: rgba(0, 0, 0, 0.65); 
             border-radius: 20px; 
             text-align: center; 
@@ -71,17 +70,16 @@
             100% { opacity: 1; filter: blur(0); transform: translateY(0); }
         }
         
-        /* 🌟 ขยายขนาดตัวอักษร */
         .reveal-effect h1 { 
             margin: 0; 
-            font-size: 3.5rem; /* ขยายจาก 2.8rem */
+            font-size: 3.5rem; 
             font-weight: 600;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5); 
             animation: revealText 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
         }
         .reveal-effect p { 
             margin: 5px 0 0 0; 
-            font-size: 1.8rem; /* ขยายจาก 1.4rem */
+            font-size: 1.8rem; 
             color: #d1d5db; 
             animation: revealText 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; 
             opacity: 0; 
@@ -152,6 +150,7 @@
         const messageEl = document.getElementById('display-message');
 
         let currentAnimClass = 'anim-fade';
+        let emptyTimeout; // 🌟 ตัวแปรเก็บเวลาสำหรับดีเลย์หน้าจอดำ
 
         db.collection('settings').doc('display').onSnapshot(doc => {
             if (doc.exists) {
@@ -170,12 +169,20 @@
 
         db.collection('photos').where('status', '==', 'showing').onSnapshot((snapshot) => {
             if (snapshot.empty) {
-                photoEl.classList.remove('active');
-                overlayEl.classList.remove('active');
-                overlayEl.classList.remove('reveal-effect');
-                idleScreen.style.opacity = '1';
-                setTimeout(() => { photoEl.src = ''; }, 500);
+                // 🌟 หน่วงเวลา 1.5 วินาที เพื่อเช็กว่าเป็นการสลับรูป หรือตั้งใจเคลียร์จอจริงๆ
+                emptyTimeout = setTimeout(() => {
+                    photoEl.classList.remove('active');
+                    overlayEl.classList.remove('active');
+                    overlayEl.classList.remove('reveal-effect');
+                    idleScreen.style.opacity = '1';
+                    setTimeout(() => { photoEl.src = ''; }, 500);
+                }, 1500); 
                 return;
+            }
+
+            // 🌟 ถ้ารูปใหม่มาถึงก่อน 1.5 วินาที ให้ยกเลิกคำสั่งโชว์หน้าจอดำซะ!
+            if (emptyTimeout) {
+                clearTimeout(emptyTimeout);
             }
 
             let latestData = null;
@@ -197,7 +204,6 @@
                 const preloader = new Image();
                 let isLoaded = false;
                 
-                // 🌟 ระบบบังคับโชว์รูป (กันเหนียวถ้าระบบโหลดหลังบ้านรวน)
                 const showImageNow = () => {
                     if (isLoaded) return;
                     isLoaded = true;
@@ -216,13 +222,11 @@
                         photoEl.classList.add('active');
                         overlayEl.classList.add('active');
                         overlayEl.classList.add('reveal-effect');
-                    }, 300); // ลดดีเลย์ลงนิดนึงให้ภาพมาไวขึ้น
+                    }, 300);
                 };
 
                 preloader.onload = showImageNow;
                 preloader.onerror = showImageNow;
-                
-                // ถ้าโหลดเกิน 3 วินาที บังคับโชว์เลย
                 setTimeout(showImageNow, 3000); 
                 preloader.src = imgUrl;
 
