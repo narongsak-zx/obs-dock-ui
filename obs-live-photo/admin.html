@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - คุมคิวรูปภาพ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Prompt', sans-serif; background-color: #0b132b; color: #ffffff; display: flex; height: 100vh; }
+        .sidebar { width: 250px; background-color: #111c3a; padding: 30px 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
+        .sidebar h2 { margin-top: 0; font-size: 1.2rem; color: #60a5fa; margin-bottom: 30px; border-bottom: 1px solid #1e3a8a; padding-bottom: 15px; text-align: center; }
+        .menu-item { padding: 15px; margin-bottom: 10px; border-radius: 8px; color: #9ca3af; }
+        .menu-item.active { background-color: #1e3a8a; color: #ffffff; font-weight: 500; }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #1e3a8a; padding-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 1.8rem; }
+        .queue-list { display: flex; flex-direction: column; gap: 15px; }
+        .queue-item { background-color: #111c3a; border-radius: 12px; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .sender-info { display: flex; align-items: center; gap: 20px; }
+        .sender-info img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 2px solid #3b82f6; }
+        .sender-details h3 { margin: 0 0 5px 0; font-size: 1.2rem; }
+        .sender-details p { margin: 0; color: #9ca3af; font-size: 0.9rem; }
+        .btn-show { background-color: #10b981; color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-family: 'Prompt', sans-serif; font-size: 1rem; font-weight: 600; transition: transform 0.1s; }
+        .btn-show:hover { background-color: #059669; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>หน้าจอควบคุม<br>(Admin Dashboard)</h2>
+        <div class="menu-item active">คิวรูปภาพ (รอแสดง)</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>คิวรูปภาพ (รอแสดง)</h1>
+            <button onclick="clearOldData()" style="background: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-family: 'Prompt';">ทำความสะอาดข้อมูลเก่า</button>
+        </div>
+
+        <div class="queue-list" id="queue-container">
+            <p id="empty-text" style="color: #94a3b8; text-align: center; margin-top: 50px;">กำลังโหลดข้อมูล...</p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // 📥 นำเอา firebaseConfig มาใส่ตรงนี้
+        const firebaseConfig = {
+  apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
+  authDomain: "obs-live-photo.firebaseapp.com",
+  projectId: "obs-live-photo",
+  storageBucket: "obs-live-photo.firebasestorage.app",
+  messagingSenderId: "410755111325",
+  appId: "1:410755111325:web:814ca02445f4305267f774"
+};
+
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+
+        const queueContainer = document.getElementById('queue-container');
+
+        // ฟังก์ชัน: ลบข้อมูลที่อายุเกิน 24 ชั่วโมง (1 วัน) ทิ้งโดยอัตโนมัติ
+        function autoCleanUp() {
+            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000); // เวลาย้อนหลัง 24 ชม.
+            db.collection('photos').where('timestamp', '<', oneDayAgo).get().then((snapshot) => {
+                snapshot.forEach((doc) => {
+                    doc.ref.delete(); // สั่งลบ
+                });
+                console.log("ระบบล้างข้อมูลเก่าเกิน 24 ชม. เรียบร้อยแล้ว");
+            });
+        }
+        
+        // รันทำความสะอาดทันทีที่เปิดหน้าแอดมิน
+        autoCleanUp();
+
+        // ฟังก์ชันดึงรูปมารอคิว
+        db.collection('photos')
+          .where('status', '==', 'waiting')
+          .onSnapshot((snapshot) => {
+              
+              if (snapshot.empty) {
+                  queueContainer.innerHTML = '<p style="color: #94a3b8; text-align: center; margin-top: 50px;">ยังไม่มีรูปส่งเข้ามาในคิว...</p>';
+                  return;
+              }
+
+              // นำข้อมูลมาจัดเรียงตามเวลาด้วย JavaScript (เรียงคิวจากเก่าไปใหม่)
+              let docs = [];
+              snapshot.forEach((doc) => {
+                  docs.push({ id: doc.id, ...doc.data() });
+              });
+              docs.sort((a, b) => a.timestamp - b.timestamp);
+
+              queueContainer.innerHTML = ''; // ล้างจอเพื่อวาดใหม่
+              docs.forEach((data) => {
+                  // แปลงเวลาให้ดูง่ายๆ
+                  const timeStr = new Date(data.timestamp).toLocaleTimeString('th-TH');
+                  const queueHtml = `
+                    <div class="queue-item" id="item-${data.id}">
+                        <div class="sender-info">
+                            <img src="${data.imageUrl}" alt="Thumb">
+                            <div class="sender-details">
+                                <h3>${data.name}</h3>
+                                <p>${data.message} | ส่งเมื่อ: ${timeStr}</p>
+                            </div>
+                        </div>
+                        <button class="btn-show" onclick="pushToScreen('${data.id}')">แสดงขึ้นจอ</button>
+                    </div>
+                  `;
+                  queueContainer.innerHTML += queueHtml;
+              });
+          });
+
+        // ฟังก์ชันแสดงขึ้นจอ
+        async function pushToScreen(docId) {
+            try {
+                await db.collection('photos').doc(docId).update({
+                    status: 'showing'
+                });
+            } catch (error) {
+                console.error(error);
+                alert('เกิดข้อผิดพลาดในการแสดงผล');
+            }
+        }
+    </script>
+</body>
+</html>
