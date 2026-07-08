@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO Event Dashboard (Real Data)</title>
+    <title>PRO Event Dashboard (Full System)</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,10 +15,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.2/dist/obs-ws.min.js"></script>
+
     <style>
         body { font-family: 'Prompt', sans-serif; background-color: #0f172a; color: white; margin: 0; overflow: hidden; }
         .canvas-bg { background-image: radial-gradient(#334155 1px, transparent 1px); background-size: 20px 20px; }
-        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -26,9 +29,10 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
+        const OBSWebSocket = obsWebSocketVersion.OBSWebSocket; // จาก CDN
 
-        // 📥 1. ใส่ Firebase Config ของคุณตรงนี้
+        // 📥 ใส่ Firebase Config
         const firebaseConfig = {
   apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
   authDomain: "obs-live-photo.firebaseapp.com",
@@ -42,215 +46,282 @@
         const db = firebase.firestore();
 
         function App() {
-            const [activeMenu, setActiveMenu] = useState('🕒 คิวรอแสดง');
+            // State: UI & Data
+            const [activeMenu, setActiveMenu] = useState('🏠 Dashboard');
             const [photos, setPhotos] = useState([]);
             const [showingPhoto, setShowingPhoto] = useState(null);
-            const [previewPhoto, setPreviewPhoto] = useState(null); // รูปที่กดเลือกมาดูบน Canvas
+            
+            // State: OBS
+            const obs = useRef(new OBSWebSocket());
+            const [obsStatus, setObsStatus] = useState('Disconnected');
+            const [obsScenes, setObsScenes] = useState([]);
+            const [currentScene, setCurrentScene] = useState('');
+            const [obsConfig, setObsConfig] = useState({ ip: 'ws://localhost:4455', password: '' });
 
-            // ดึงข้อมูลทั้งหมดจาก Firebase แบบ Real-time
+            // State: Auto Play
+            const [autoPlayInterval, setAutoPlayInterval] = useState(0); // 0 = off, 5, 10, 15
+
+            // ดึงข้อมูล Firebase
             useEffect(() => {
                 const unsubscribe = db.collection('photos')
                     .orderBy('timestamp', 'asc')
                     .onSnapshot(snapshot => {
-                        const fetchedPhotos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        setPhotos(fetchedPhotos);
-                        
-                        // หาตัวที่กำลังแสดงอยู่
-                        const currentlyShowing = fetchedPhotos.find(p => p.status === 'showing');
-                        setShowingPhoto(currentlyShowing || null);
-                        
-                        // ถ้าไม่มีการพรีวิวรูปอื่น ให้แสดงรูปที่กำลังโชว์อยู่บน Canvas
-                        if (!previewPhoto && currentlyShowing) {
-                            setPreviewPhoto(currentlyShowing);
-                        }
+                        const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setPhotos(fetched);
+                        setShowingPhoto(fetched.find(p => p.status === 'showing') || null);
                     });
                 return () => unsubscribe();
             }, []);
 
-            // ตัวกรองข้อมูลตามสถานะ
-            const waitingQueue = photos.filter(p => p.status === 'waiting');
-            const historyQueue = photos.filter(p => p.status === 'shown' || p.status === 'rejected');
-            const stats = {
-                total: photos.length,
-                waiting: waitingQueue.length,
-                showing: showingPhoto ? 1 : 0,
-                shown: photos.filter(p => p.status === 'shown').length
+            // Auto Play Logic
+            useEffect(() => {
+                let timer;
+                if (autoPlayInterval > 0) {
+                    timer = setInterval(() => {
+                        const waiting = photos.filter(p => p.status === 'waiting');
+                        if (waiting.length > 0) {
+                            pushToLive(waiting[0]); // ดึงคิวที่เก่าที่สุดขึ้นจอ
+                        }
+                    }, autoPlayInterval * 1000);
+                }
+                return () => clearInterval(timer);
+            }, [autoPlayInterval, photos, showingPhoto]);
+
+            // OBS Connection Logic
+            const connectOBS = async () => {
+                try {
+                    setObsStatus('Connecting...');
+                    await obs.current.connect(obsConfig.ip, obsConfig.password);
+                    setObsStatus('Connected');
+                    
+                    // ดึง Scene ทั้งหมด
+                    const sceneList = await obs.current.call('GetSceneList');
+                    setObsScenes(sceneList.scenes.map(s => s.sceneName));
+                    setCurrentScene(sceneList.currentProgramSceneName);
+
+                    // ดักจับเวลาคนกดเปลี่ยน Scene ใน OBS
+                    obs.current.on('CurrentProgramSceneChanged', (data) => {
+                        setCurrentScene(data.sceneName);
+                    });
+
+                } catch (error) {
+                    console.error("OBS Connection Error:", error);
+                    setObsStatus('Failed');
+                    alert("เชื่อมต่อ OBS ไม่สำเร็จ ตรวจสอบ IP/Password และเปิด WebSocket ใน OBS ก่อนครับ");
+                }
             };
 
-            // ฟังก์ชันดันรูปขึ้นจอ (อัปเดต Firebase)
+            const changeObsScene = async (sceneName) => {
+                if (obsStatus === 'Connected') {
+                    await obs.current.call('SetCurrentProgramScene', { sceneName });
+                }
+            };
+
+            // Firebase Actions
             const pushToLive = async (photo) => {
                 if (!photo) return;
-                
                 try {
-                    // 1. เปลี่ยนตัวที่แสดงอยู่ปัจจุบันให้กลายเป็น 'shown'
                     if (showingPhoto) {
                         await db.collection('photos').doc(showingPhoto.id).update({ status: 'shown' });
                     }
-                    // 2. เปลี่ยนตัวที่เลือกให้กลายเป็น 'showing'
                     await db.collection('photos').doc(photo.id).update({ status: 'showing' });
-                    
-                    alert(`ส่งรูปของ ${photo.name} ขึ้นจอเรียบร้อย!`);
-                } catch (error) {
-                    console.error(error);
-                    alert("เกิดข้อผิดพลาดในการอัปเดตฐานข้อมูล");
+                } catch (error) { console.error(error); }
+            };
+
+            const changeStatus = async (id, status) => {
+                await db.collection('photos').doc(id).update({ status });
+            };
+
+            const deletePhoto = async (id) => {
+                if(confirm("แน่ใจหรือไม่ที่จะลบข้อมูลนี้ถาวร?")) {
+                    await db.collection('photos').doc(id).delete();
                 }
             };
 
-            // ฟังก์ชันปฏิเสธรูป
-            const rejectPhoto = async (photoId) => {
-                if(confirm("แน่ใจหรือไม่ที่จะลบ/ปฏิเสธรูปนี้?")) {
-                    await db.collection('photos').doc(photoId).update({ status: 'rejected' });
-                    if(previewPhoto && previewPhoto.id === photoId) setPreviewPhoto(null);
-                }
-            };
-
-            const formatTime = (ts) => {
-                if(!ts) return '';
-                // รองรับทั้ง Timestamp แบบตัวเลข และแบบ Firebase Object
-                const date = typeof ts === 'number' ? new Date(ts) : ts.toDate();
-                return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-            };
-
-            return (
-                <div className="flex h-screen w-full">
-                    {/* Sidebar */}
-                    <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-10 shadow-xl">
-                        <div className="p-5 border-b border-slate-800">
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">QR Live Display</h1>
-                            <div className="mt-3 text-xs space-y-2">
-                                <div className="flex items-center text-emerald-400"><span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 shadow-[0_0_8px_#34d399]"></span> Database Connected</div>
+            // ตัวแปรข้อมูล
+            const waitingQueue = photos.filter(p => p.status === 'waiting');
+            const shownQueue = photos.filter(p => p.status === 'shown');
+            const rejectedQueue = photos.filter(p => p.status === 'rejected');
+            
+            // --- Component: Sidebar ---
+            const Sidebar = () => (
+                <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-10 shadow-xl">
+                    <div className="p-5 border-b border-slate-800">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Live Event Pro</h1>
+                        <div className="mt-3 text-xs space-y-2">
+                            <div className="flex items-center text-emerald-400"><span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span> Firebase DB</div>
+                            <div className={`flex items-center ${obsStatus === 'Connected' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                <span className={`w-2 h-2 rounded-full mr-2 ${obsStatus === 'Connected' ? 'bg-emerald-400' : 'bg-red-400'}`}></span> OBS {obsStatus}
                             </div>
                         </div>
-                        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                            {['🏠 Dashboard', '🕒 คิวรอแสดง', '▶️ กำลังแสดง', '✅ ประวัติ (แสดงแล้ว)', '⚙️ ตั้งค่า'].map(menu => (
-                                <div 
-                                    key={menu} 
-                                    onClick={() => setActiveMenu(menu)}
-                                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 font-medium ${activeMenu === menu ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                                    {menu}
+                    </div>
+                    <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+                        {['🏠 Dashboard', '🕒 คิวรอแสดง', '▶️ กำลังแสดง', '✅ แสดงแล้ว', '🚫 รูปที่ปฏิเสธ', '🎨 Template (Overlay)', '⚙️ ตั้งค่าระบบ'].map(menu => (
+                            <div key={menu} onClick={() => setActiveMenu(menu)}
+                                className={`p-3 rounded-lg cursor-pointer transition-all font-medium ${activeMenu === menu ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                {menu}
+                            </div>
+                        ))}
+                    </nav>
+                </div>
+            );
+
+            // --- Component: Main Dashboard View ---
+            const DashboardView = () => (
+                <div className="flex-1 flex flex-col h-full overflow-hidden">
+                    {/* Stats */}
+                    <div className="grid grid-cols-4 gap-4 p-5 bg-slate-900 border-b border-slate-800">
+                        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700"><div className="text-slate-400 text-sm">จำนวนรูปวันนี้</div><div className="text-3xl font-bold">{photos.length}</div></div>
+                        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700"><div className="text-amber-400 text-sm">รอคิว</div><div className="text-3xl font-bold text-amber-400">{waitingQueue.length}</div></div>
+                        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700"><div className="text-emerald-400 text-sm">กำลังแสดง</div><div className="text-3xl font-bold text-emerald-400">{showingPhoto ? 1 : 0}</div></div>
+                        <div className="bg-slate-800 p-4 rounded-xl border border-slate-700"><div className="text-blue-400 text-sm">แสดงแล้ว</div><div className="text-3xl font-bold text-blue-400">{shownQueue.length}</div></div>
+                    </div>
+
+                    <div className="flex-1 flex p-5 gap-5 overflow-hidden">
+                        {/* Live Canvas */}
+                        <div className="flex-[3] flex flex-col border border-slate-800 rounded-xl overflow-hidden bg-slate-900">
+                            <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-800/50">
+                                <span className="font-semibold text-white">Live Canvas Preview</span>
+                                <span className="text-xs px-2 py-1 bg-slate-900 rounded text-emerald-400 border border-emerald-500/30">Output: 1920x1080</span>
+                            </div>
+                            <div className="flex-1 canvas-bg flex items-center justify-center p-8">
+                                <div className="aspect-video w-full max-w-4xl bg-black border border-slate-700 shadow-2xl flex relative overflow-hidden">
+                                    {showingPhoto ? (
+                                        <>
+                                            <div className="w-[75%] h-full relative group">
+                                                <img src={showingPhoto.imageUrl} className="w-full h-full object-cover" />
+                                                <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black to-transparent">
+                                                    <h2 className="text-4xl font-bold text-white shadow-black">{showingPhoto.name}</h2>
+                                                    <p className="text-xl text-gray-300">{showingPhoto.message}</p>
+                                                </div>
+                                            </div>
+                                            <div className="w-[25%] h-full bg-white flex flex-col items-center justify-center border-l border-slate-800">
+                                                <div className="text-blue-900 font-bold mb-4">สแกนส่งรูป</div>
+                                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live-event.com" className="w-32 h-32 border-4 border-gray-100 rounded-lg" />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold text-xl">Waiting for Display...</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Controls: OBS & AutoPlay */}
+                        <div className="flex-1 flex flex-col gap-5 min-w-[280px]">
+                            {/* OBS Control Panel */}
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+                                <h3 className="font-semibold text-white mb-4 border-b border-slate-800 pb-2">🎛️ OBS Control</h3>
+                                {obsStatus !== 'Connected' ? (
+                                    <div className="space-y-3">
+                                        <input type="text" placeholder="ws://localhost:4455" value={obsConfig.ip} onChange={e => setObsConfig({...obsConfig, ip: e.target.value})} className="w-full bg-slate-800 p-2 rounded text-sm border border-slate-700 outline-none focus:border-blue-500" />
+                                        <input type="password" placeholder="Password (Optional)" value={obsConfig.password} onChange={e => setObsConfig({...obsConfig, password: e.target.value})} className="w-full bg-slate-800 p-2 rounded text-sm border border-slate-700 outline-none focus:border-blue-500" />
+                                        <button onClick={connectOBS} className="w-full bg-blue-600 hover:bg-blue-500 p-2 rounded font-bold transition">Connect to OBS</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <div className="text-sm text-slate-400">Current Scene: <span className="text-white bg-blue-600/30 px-2 py-1 rounded text-xs ml-2">{currentScene}</span></div>
+                                        <div className="grid grid-cols-1 gap-2 mt-3">
+                                            {obsScenes.map(scene => (
+                                                <button key={scene} onClick={() => changeObsScene(scene)} className={`p-2 rounded text-sm transition text-left px-3 ${currentScene === scene ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}>
+                                                    🎥 {scene}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Auto Play Panel */}
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex-1">
+                                <h3 className="font-semibold text-white mb-4 border-b border-slate-800 pb-2 flex justify-between items-center">
+                                    <span>🤖 Auto Play</span>
+                                    {autoPlayInterval > 0 && <span className="flex h-3 w-3 relative"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span>}
+                                </h3>
+                                <div className="space-y-2">
+                                    {[0, 5, 10, 15].map(sec => (
+                                        <div key={sec} onClick={() => setAutoPlayInterval(sec)} className={`p-3 rounded-lg cursor-pointer flex items-center border transition-all ${autoPlayInterval === sec ? 'bg-blue-900/40 border-blue-500 text-white font-bold' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>
+                                            <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${autoPlayInterval === sec ? 'border-blue-400' : 'border-slate-500'}`}>
+                                                {autoPlayInterval === sec && <div className="w-2 h-2 bg-blue-400 rounded-full"></div>}
+                                            </div>
+                                            {sec === 0 ? 'Manual (ปิด)' : `ทุกๆ ${sec} วินาที`}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Queue (Drag/Click area) */}
+                    <div className="h-48 border-t border-slate-800 bg-slate-900 p-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="font-semibold text-amber-400 flex items-center">🔥 คิวต่อไป ({waitingQueue.length})</h3>
+                        </div>
+                        <div className="flex gap-4 overflow-x-auto pb-2 h-full">
+                            {waitingQueue.length === 0 && <div className="text-slate-600 flex items-center justify-center w-full h-full text-sm">ไม่มีรูปในคิว...</div>}
+                            {waitingQueue.map(item => (
+                                <div key={item.id} className="min-w-[220px] bg-slate-800 rounded-xl p-2 flex items-center gap-3 border border-slate-700 hover:border-blue-500 cursor-pointer group transition-all" onClick={() => pushToLive(item)}>
+                                    <div className="relative">
+                                        <img src={item.imageUrl} className="w-20 h-20 rounded-lg object-cover" />
+                                        <div className="absolute inset-0 bg-blue-600/80 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="font-bold text-white text-xs">คลิกขึ้นจอ</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <div className="font-bold text-white text-sm truncate">{item.name}</div>
+                                        <div className="text-xs text-slate-400 mt-1">เวลา: {new Date(item.timestamp).toLocaleTimeString('th-TH')}</div>
+                                    </div>
                                 </div>
                             ))}
-                        </nav>
-                    </div>
-
-                    {/* Main Content */}
-                    <div className="flex-1 flex flex-col overflow-hidden bg-slate-950">
-                        
-                        {/* Stats Header */}
-                        <div className="grid grid-cols-4 gap-4 p-5 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm">
-                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                                <div className="text-slate-400 text-sm font-medium">จำนวนรูปวันนี้</div>
-                                <div className="text-3xl font-bold text-white mt-1">{stats.total}</div>
-                            </div>
-                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                                <div className="text-amber-400 text-sm font-medium">รอคิว</div>
-                                <div className="text-3xl font-bold text-amber-400 mt-1">{stats.waiting}</div>
-                            </div>
-                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-full blur-2xl"></div>
-                                <div className="text-emerald-400 text-sm font-medium">กำลังแสดง</div>
-                                <div className="text-3xl font-bold text-emerald-400 mt-1">{stats.showing}</div>
-                            </div>
-                            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                                <div className="text-blue-400 text-sm font-medium">แสดงแล้ว</div>
-                                <div className="text-3xl font-bold text-blue-400 mt-1">{stats.shown}</div>
-                            </div>
                         </div>
+                    </div>
+                </div>
+            );
 
-                        {/* Middle: Canvas & List */}
-                        <div className="flex-1 flex overflow-hidden">
-                            
-                            {/* Left: Canvas Area */}
-                            <div className="flex-[2] flex flex-col p-5 border-r border-slate-800">
-                                <h3 className="font-semibold text-slate-300 mb-4 flex justify-between items-center">
-                                    <span>Live Canvas (Preview LED)</span>
-                                    {previewPhoto && previewPhoto.status !== 'showing' && (
-                                        <button 
-                                            onClick={() => pushToLive(previewPhoto)}
-                                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-emerald-900/20 transition-all">
-                                            🚀 ส่งขึ้นจอ OBS ทันที
-                                        </button>
-                                    )}
-                                </h3>
-                                
-                                <div className="flex-1 canvas-bg flex items-center justify-center rounded-xl border border-slate-800 relative overflow-hidden">
-                                    {previewPhoto ? (
-                                        <div className="aspect-video w-full max-w-3xl bg-black border border-slate-700 shadow-2xl flex relative overflow-hidden ring-4 ring-black/50">
-                                            <div className="w-[70%] h-full relative">
-                                                <img src={previewPhoto.imageUrl} className="w-full h-full object-cover" />
-                                                <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black via-black/80 to-transparent">
-                                                    <h2 className="text-4xl font-bold text-white drop-shadow-lg">{previewPhoto.name}</h2>
-                                                    <p className="text-xl text-slate-300 mt-2">{previewPhoto.message}</p>
-                                                </div>
-                                            </div>
-                                            <div className="w-[30%] h-full bg-white flex flex-col items-center justify-center">
-                                                <div className="text-center text-blue-900 font-bold text-xl mb-4">สแกนส่งรูป</div>
-                                                <div className="w-40 h-40 bg-gray-100 border-8 border-gray-100 rounded-xl shadow-sm flex items-center justify-center">
-                                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://your-website.com" className="w-full h-full" />
-                                                </div>
-                                            </div>
-                                            {/* Badge บอกสถานะบน Canvas */}
-                                            {previewPhoto.status === 'showing' && (
-                                                <div className="absolute top-4 left-4 px-3 py-1 bg-emerald-500 text-white text-sm font-bold rounded-full flex items-center gap-2 shadow-lg">
-                                                    <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span> กำลังแสดงบนจอ
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="text-slate-500 flex flex-col items-center">
-                                            <span className="text-4xl mb-2">📸</span>
-                                            <p>คลิกเลือกรูปจากรายการด้านขวาเพื่อพรีวิว</p>
-                                        </div>
-                                    )}
+            // --- Component: List View (คิวรอแสดง, ประวัติ, ปฏิเสธ) ---
+            const ListView = ({ title, data, showApprove, showReject, showDelete }) => (
+                <div className="flex-1 p-8 bg-slate-950 overflow-y-auto">
+                    <h2 className="text-2xl font-bold text-white mb-6 border-b border-slate-800 pb-4">{title} ({data.length})</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {data.length === 0 && <div className="text-slate-500">ไม่มีข้อมูลในหมวดหมู่นี้</div>}
+                        {data.map(item => (
+                            <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex gap-4 hover:border-slate-600 transition-colors">
+                                <img src={item.imageUrl} className="w-24 h-24 rounded-lg object-cover bg-black" />
+                                <div className="flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h3 className="font-bold text-white text-lg truncate">{item.name}</h3>
+                                        <p className="text-slate-400 text-sm truncate">{item.message}</p>
+                                    </div>
+                                    <div className="flex gap-2 mt-2">
+                                        {showApprove && <button onClick={() => pushToLive(item)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold w-full transition">ขึ้นจอ</button>}
+                                        {showReject && <button onClick={() => changeStatus(item.id, 'rejected')} className="px-3 py-1.5 bg-orange-900/50 hover:bg-orange-600 text-orange-200 hover:text-white rounded text-xs font-bold transition">ปฏิเสธ</button>}
+                                        {showDelete && <button onClick={() => deletePhoto(item.id)} className="px-3 py-1.5 bg-red-900/50 hover:bg-red-600 text-red-200 hover:text-white rounded text-xs font-bold transition">ลบถาวร</button>}
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Right: Dynamic List based on Active Menu */}
-                            <div className="flex-1 bg-slate-900/50 flex flex-col p-5">
-                                <h3 className="font-semibold text-white mb-4 border-b border-slate-800 pb-2">{activeMenu}</h3>
-                                
-                                <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-                                    {activeMenu === '🕒 คิวรอแสดง' && waitingQueue.length === 0 && <p className="text-slate-500 text-center mt-10">ไม่มีคิวรอแสดง</p>}
-                                    {activeMenu === '🕒 คิวรอแสดง' && waitingQueue.map(item => (
-                                        <div key={item.id} 
-                                            onClick={() => setPreviewPhoto(item)}
-                                            className={`bg-slate-800 p-3 rounded-xl border cursor-pointer transition-all ${previewPhoto?.id === item.id ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'border-slate-700 hover:border-slate-500'}`}>
-                                            <div className="flex gap-4">
-                                                <img src={item.imageUrl} className="w-20 h-20 rounded-lg object-cover bg-slate-900" />
-                                                <div className="flex-1 flex flex-col justify-center">
-                                                    <div className="font-bold text-white text-lg">{item.name}</div>
-                                                    <div className="text-sm text-slate-400 mt-1">เวลา: {formatTime(item.timestamp)}</div>
-                                                </div>
-                                                <div className="flex flex-col gap-2 justify-center">
-                                                    <button onClick={(e) => { e.stopPropagation(); pushToLive(item); }} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-xs text-white rounded">แสดง</button>
-                                                    <button onClick={(e) => { e.stopPropagation(); rejectPhoto(item.id); }} className="px-3 py-1 bg-red-900/50 hover:bg-red-500 text-xs text-red-200 rounded">ลบ</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {activeMenu === '✅ ประวัติ (แสดงแล้ว)' && historyQueue.map(item => (
-                                        <div key={item.id} 
-                                            onClick={() => setPreviewPhoto(item)}
-                                            className="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 flex gap-4 cursor-pointer hover:bg-slate-800 opacity-70 hover:opacity-100 transition-opacity">
-                                            <img src={item.imageUrl} className="w-16 h-16 rounded-lg object-cover grayscale" />
-                                            <div className="flex-1">
-                                                <div className="font-bold text-slate-300">{item.name}</div>
-                                                <div className="text-xs text-slate-500">สถานะ: {item.status === 'shown' ? 'แสดงแล้ว' : 'ปฏิเสธ'}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    
-                                    {activeMenu !== '🕒 คิวรอแสดง' && activeMenu !== '✅ ประวัติ (แสดงแล้ว)' && (
-                                        <div className="text-slate-500 text-center mt-10 p-5 bg-slate-800/30 rounded-xl border border-slate-800 border-dashed">
-                                            เมนู {activeMenu} ยังไม่เปิดใช้งานในเวอร์ชัน MVP
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
+                        ))}
                     </div>
+                </div>
+            );
+
+            // Render Logic
+            return (
+                <div className="flex h-screen w-full text-slate-200">
+                    <Sidebar />
+                    {activeMenu === '🏠 Dashboard' && <DashboardView />}
+                    {activeMenu === '🕒 คิวรอแสดง' && <ListView title="🕒 คิวรอแสดง" data={waitingQueue} showApprove={true} showReject={true} showDelete={false} />}
+                    {activeMenu === '▶️ กำลังแสดง' && <ListView title="▶️ รูปที่กำลังแสดงบนจอ" data={showingPhoto ? [showingPhoto] : []} showApprove={false} showReject={false} showDelete={false} />}
+                    {activeMenu === '✅ แสดงแล้ว' && <ListView title="✅ ประวัติรูปที่แสดงแล้ว" data={shownQueue} showApprove={true} showReject={false} showDelete={true} />}
+                    {activeMenu === '🚫 รูปที่ปฏิเสธ' && <ListView title="🚫 รูปที่ถูกปฏิเสธ" data={rejectedQueue} showApprove={true} showReject={false} showDelete={true} />}
+                    
+                    {/* Placeholder สำหรับเมนูที่เหลือ */}
+                    {(activeMenu === '🎨 Template (Overlay)' || activeMenu === '⚙️ ตั้งค่าระบบ') && (
+                        <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 p-8 text-center">
+                            <span className="text-6xl mb-4">🛠️</span>
+                            <h2 className="text-2xl font-bold text-white mb-2">{activeMenu}</h2>
+                            <p className="text-slate-500 max-w-md">ส่วนนี้สำหรับเชื่อมต่อกับ Template Layout บน OBS และตั้งค่า Database เพิ่มเติม (สามารถต่อยอดลอจิกเก็บค่า Setting ลง Firebase ได้เลย)</p>
+                        </div>
+                    )}
                 </div>
             );
         }
