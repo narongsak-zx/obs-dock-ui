@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Photo - Broadcast Control</title>
+    <title>OBS Dock - Pro Control</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,175 +17,116 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        bgDark: '#121417',
-                        bgCard: '#1A1D24',
-                        bgItem: '#22262F',
-                        borderDim: '#2A2E39',
-                        accentBlue: '#2563EB',
-                        textDim: '#8B949E'
-                    },
+                    colors: { bgMain: '#1E1E1E', bgPanel: '#2B2B2B', bgItem: '#333333', borderDim: '#111111', accent: '#3b82f6' },
                     fontFamily: { sans: ['Prompt', 'sans-serif'] }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #121417; color: #E5E7EB; overflow: hidden; user-select: none; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        body { background-color: #1E1E1E; color: #E5E7EB; overflow-x: hidden; user-select: none; font-size: 12px; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #2A2E39; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #777; }
 
         /* Custom Toggle */
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #2A2E39; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: #2563EB; }
-        input:checked + .slider:before { transform: translateX(20px); }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3b82f6; }
+        input:checked + .slider:before { transform: translateX(16px); }
+        .master-toggle:checked + .slider { background-color: #10b981; } /* สีเขียวสำหรับ Master Switch */
 
         /* Progress Bar */
-        .progress-bar-bg { background-color: #2A2E39; border-radius: 4px; overflow: hidden; display: flex; gap: 2px; }
-        .progress-chunk { height: 6px; flex: 1; background-color: #2A2E39; transition: background-color 0.1s; }
+        .progress-bar-bg { background-color: #111; border-radius: 3px; overflow: hidden; display: flex; gap: 1px; height: 4px; }
+        .progress-chunk { flex: 1; background-color: #333; transition: background-color 0.1s; }
         .progress-chunk.filled { background-color: #3b82f6; }
         
-        .action-btn { transition: all 0.2s; border: 1px solid transparent; }
-        .action-btn:hover { border-color: rgba(255,255,255,0.2); }
+        .tab-btn { border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; font-weight: 600; background-color: #2B2B2B; }
+        
+        select { background-image: none; text-align: center; }
     </style>
 </head>
-<body class="flex flex-col h-screen text-sm">
+<body class="flex flex-col h-screen">
 
-    <div class="flex gap-4 p-4 border-b border-borderDim bg-bgCard">
-        <div class="flex-1 bg-bgDark border border-borderDim rounded-xl p-4 flex flex-col justify-between">
-            <div class="flex items-center gap-3 border-b border-borderDim pb-3 mb-3">
-                <i class="fa-solid fa-record-vinyl text-xl"></i>
-                <h1 class="text-xl font-bold tracking-wide">Live Photo</h1>
-                <div class="flex items-center gap-2 ml-4">
-                    <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span class="text-emerald-500 font-semibold text-xs">ON</span>
-                    <i class="fa-solid fa-chevron-down text-xs text-textDim cursor-pointer"></i>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-2">
-                    <label class="switch"><input type="checkbox" id="autoplay-switch"><span class="slider"></span></label>
-                    <span class="font-medium text-sm">Auto Play</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-textDim text-xs">ทุก :</span>
-                    <select id="timer-select" class="bg-bgItem border border-borderDim rounded px-2 py-1 text-sm outline-none">
-                        <option value="5">5 วินาที</option><option value="10" selected>10 วินาที</option><option value="15">15 วินาที</option>
-                    </select>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-textDim text-xs">โหมดเล่น :</span>
-                    <select id="loop-mode" class="bg-bgItem border border-borderDim rounded px-2 py-1 text-sm outline-none">
-                        <option value="queue">เล่นเฉพาะคิวใหม่</option><option value="all">วนรูปรวมทั้งหมด</option>
-                    </select>
-                </div>
-            </div>
+    <div class="bg-bgPanel border-b border-borderDim p-3 flex justify-between items-center shadow-md z-20 shrink-0">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-camera-retro text-accent text-sm"></i>
+            <h1 class="font-bold text-white text-sm leading-none">Live Photo</h1>
         </div>
-
-        <div class="flex-[1.2] bg-bgDark border border-borderDim rounded-xl p-4 flex gap-4">
-            <div class="flex-1">
-                <div class="text-xs text-accentBlue font-medium mb-2">กำลังแสดงผลบนจอ</div>
-                <div class="flex gap-3" id="now-showing-box">
-                    <img id="live-img" src="" class="w-20 h-14 rounded-lg object-cover bg-black border border-borderDim hidden">
-                    <div class="flex-1 overflow-hidden" id="live-details" style="display: none;">
-                        <h2 id="live-name" class="font-bold text-base truncate text-white">...</h2>
-                        <p id="live-msg" class="text-xs text-textDim truncate">...</p>
-                        <div class="text-[10px] text-textDim mt-1"><i class="fa-regular fa-clock"></i> <span id="live-time">00:00</span></div>
-                    </div>
-                    <div id="live-empty" class="text-textDim text-xs mt-2">ยังไม่มีรูปแสดงผล</div>
-                </div>
-            </div>
-            <div class="w-1/3 flex flex-col justify-between border-l border-borderDim pl-4">
-                <div>
-                    <div class="text-xs text-textDim mb-1">เหลือเวลา</div>
-                    <div class="text-2xl font-bold text-accentBlue"><span id="countdown-text">--</span> <span class="text-sm font-normal">วินาที</span></div>
-                    <div class="progress-bar-bg mt-1 w-full" id="progress-bar">
-                        </div>
-                </div>
-                <button onclick="clearScreen()" class="text-xs text-textDim hover:text-white bg-bgItem hover:bg-borderDim border border-borderDim rounded px-2 py-1 transition w-full mt-2">
-                    <i class="fa-solid fa-trash-can mr-1"></i> ล้างหน้าจอ (Ctrl+L)
-                </button>
-            </div>
+        <div class="flex items-center gap-2">
+            <span id="master-status" class="text-[10px] text-emerald-400">จอแสดงผล</span>
+            <label class="switch">
+                <input type="checkbox" id="master-switch" class="master-toggle" checked>
+                <span class="slider"></span>
+            </label>
         </div>
     </div>
 
-    <div class="flex flex-1 overflow-hidden p-4 gap-4 bg-[#090A0C]">
+    <div class="bg-bgMain p-2 border-b border-borderDim shrink-0 space-y-2">
+        <div class="bg-bgPanel p-2 rounded border border-[#333] flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <label class="switch"><input type="checkbox" id="autoplay-switch"><span class="slider"></span></label>
+                <span class="font-medium text-xs">Auto Play</span>
+            </div>
+            <select id="timer-select" class="bg-bgItem border border-[#444] rounded px-2 py-0.5 text-xs outline-none focus:border-accent">
+                <option value="5">5 วิ</option><option value="10" selected>10 วิ</option><option value="15">15 วิ</option>
+            </select>
+        </div>
         
-        <div class="flex-[1.5] bg-bgCard border border-borderDim rounded-xl flex flex-col overflow-hidden">
-            <div class="flex border-b border-borderDim">
-                <button class="flex-1 py-3 text-center border-b-2 border-accentBlue text-accentBlue font-medium">รอคิว <span id="queue-count" class="bg-accentBlue text-white text-[10px] px-1.5 py-0.5 rounded ml-1">0</span></button>
-                <button class="flex-1 py-3 text-center text-textDim hover:text-gray-300 transition">แสดงรายการที่ซ่อน</button>
-            </div>
-            <div class="p-2 border-b border-borderDim flex items-center gap-2">
-                <span class="text-xs text-textDim ml-2">จัดลำดับ:</span>
-                <button class="bg-bgItem px-2 py-1 rounded text-textDim border border-borderDim"><i class="fa-solid fa-arrow-up"></i></button>
-                <button class="bg-bgItem px-2 py-1 rounded text-textDim border border-borderDim"><i class="fa-solid fa-arrow-down"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="queue-list">
-                <div class="text-center text-textDim text-xs mt-10">กำลังโหลด...</div>
-            </div>
+        <div class="grid grid-cols-2 gap-2">
+            <select id="loop-mode" class="bg-bgPanel border border-[#333] rounded px-1 py-1.5 text-[10px] outline-none text-gray-300">
+                <option value="queue">วนคิวใหม่</option>
+                <option value="all">วนรูปทั้งหมด</option>
+            </select>
+            <select id="anim-select" class="bg-bgPanel border border-[#333] rounded px-1 py-1.5 text-[10px] outline-none text-gray-300">
+                <option value="fade">Fade</option>
+                <option value="zoom">Zoom</option>
+                <option value="slide">Slide</option>
+            </select>
         </div>
-
-        <div class="flex-1 bg-bgCard border border-borderDim rounded-xl flex flex-col overflow-hidden">
-            <div class="p-3 border-b border-borderDim text-center font-medium">
-                ประวัติ <span id="history-count" class="bg-bgItem text-textDim border border-borderDim text-[10px] px-1.5 py-0.5 rounded ml-1">0</span>
-            </div>
-            <div class="p-3 border-b border-borderDim">
-                <div class="bg-bgDark border border-borderDim rounded flex items-center px-3 py-1.5">
-                    <i class="fa-solid fa-magnifying-glass text-textDim text-xs"></i>
-                    <input type="text" placeholder="ค้นหาในประวัติ..." class="bg-transparent border-none text-xs ml-2 outline-none w-full text-white">
-                </div>
-            </div>
-            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="history-list"></div>
-        </div>
-
-        <div class="w-[280px] flex flex-col gap-3">
-            <div class="bg-bgCard border border-borderDim rounded-xl p-4">
-                <h3 class="text-accentBlue font-medium text-sm mb-1">ระบบควบคุมการมองเห็น</h3>
-                <p class="text-xs text-textDim leading-relaxed mb-4">ซ่อน/แสดงรูปจากการขึ้นจอได้ โดยไม่ต้องลบข้อมูล</p>
-                <div class="bg-bgDark border border-green-900/50 rounded-lg p-3 mb-3 relative overflow-hidden">
-                    <div class="absolute left-0 top-0 w-1 h-full bg-emerald-500"></div>
-                    <div class="flex items-center gap-2 text-emerald-400 text-sm font-medium mb-1"><i class="fa-solid fa-eye"></i> แสดงบนจอ</div>
-                    <p class="text-[10px] text-textDim">รูปจะถูกเล่นใน Auto Play</p>
-                </div>
-                <div class="bg-bgDark border border-yellow-900/50 rounded-lg p-3 relative overflow-hidden">
-                    <div class="absolute left-0 top-0 w-1 h-full bg-yellow-500"></div>
-                    <div class="flex items-center gap-2 text-yellow-500 text-sm font-medium mb-1"><i class="fa-solid fa-eye-slash"></i> ซ่อนรูป</div>
-                    <p class="text-[10px] text-textDim">จะไม่ถูกเล่นใน Auto Play และไม่ขึ้นจอ</p>
-                </div>
-            </div>
-            
-            <div class="bg-bgCard border border-borderDim rounded-xl p-4">
-                <div class="flex items-center gap-2 text-purple-400 text-sm font-medium mb-1"><i class="fa-solid fa-lock"></i> ล็อกคิว</div>
-                <p class="text-[10px] text-textDim leading-relaxed">รูปจะข้ามการเล่นใน Auto Play (ใช้สำหรับสปอนเซอร์ หรือรอจังหวะพิเศษ) แต่สามารถกดปุ่ม Play เพื่อสั่งขึ้นจอเองได้</p>
-            </div>
-        </div>
-
     </div>
 
-    <div class="bg-bgCard border-t border-borderDim p-3 flex justify-between items-center text-xs text-textDim">
-        <div class="flex gap-4">
-            <span>คีย์ลัด:</span>
-            <span class="flex items-center gap-1"><kbd class="bg-bgDark border border-borderDim px-1.5 py-0.5 rounded text-white font-sans">Space</kbd> โชว์ถัดไป</span>
-            <span class="flex items-center gap-1"><kbd class="bg-bgDark border border-borderDim px-1.5 py-0.5 rounded text-white font-sans">Ctrl+L</kbd> ล้างจอ</span>
-            <span class="flex items-center gap-1"><kbd class="bg-bgDark border border-borderDim px-1.5 py-0.5 rounded text-white font-sans">Ctrl+P</kbd> เปิด/ปิด Auto</span>
+    <div class="bg-bgPanel border-b border-borderDim p-2 shrink-0 hidden" id="now-showing-container">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] font-bold text-accent"><i class="fa-solid fa-play text-[8px] mr-1"></i> กำลังแสดงผล</span>
+            <span class="text-[10px] font-bold text-accent" id="countdown-text">--</span>
         </div>
-        <div class="flex gap-4">
-            <span class="text-emerald-400"><i class="fa-solid fa-eye"></i> แสดงบนจอ <span id="stat-show">0</span></span>
-            <span class="text-yellow-500"><i class="fa-solid fa-eye-slash"></i> ซ่อนอยู่ <span id="stat-hide">0</span></span>
-            <span class="text-purple-400"><i class="fa-solid fa-lock"></i> ล็อกคิว <span id="stat-lock">0</span></span>
-            <span class="text-white font-medium ml-2 border-l border-borderDim pl-4">ทั้งหมด <span id="stat-total">0</span> รายการ</span>
+        
+        <div class="flex gap-2 items-center bg-bgItem p-1.5 rounded border border-[#444]">
+            <img id="live-img" src="" class="w-14 h-10 object-cover rounded bg-black">
+            <div class="flex-1 overflow-hidden">
+                <div id="live-name" class="font-bold text-white text-xs truncate">...</div>
+                <div id="live-msg" class="text-[9px] text-gray-400 truncate">...</div>
+            </div>
+            <button onclick="clearScreen()" class="w-6 h-6 rounded bg-bgMain hover:bg-red-900/50 text-gray-400 hover:text-red-400 border border-[#444] transition-colors" title="ล้างหน้าจอ">
+                <i class="fa-solid fa-xmark text-[10px]"></i>
+            </button>
         </div>
+        <div class="progress-bar-bg mt-1.5" id="progress-bar"></div>
+    </div>
+
+    <div class="flex bg-bgMain border-b border-borderDim shrink-0">
+        <button onclick="switchTab('queue')" id="tab-queue" class="tab-btn flex-1 py-2 text-center tab-active hover:bg-bgPanel">คิว (<span id="queue-count">0</span>)</button>
+        <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel">ประวัติ (<span id="history-count">0</span>)</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto bg-bgMain p-1.5 relative">
+        <div id="queue-list" class="space-y-1.5"></div>
+        <div id="history-list" class="space-y-1.5 hidden"></div>
+    </div>
+
+    <div class="bg-bgPanel border-t border-borderDim p-2 shrink-0 text-center">
+        <button onclick="autoCleanUp()" class="text-[10px] text-gray-500 hover:text-red-400 transition-colors">
+            <i class="fa-solid fa-broom"></i> ล้างข้อมูลเก่าเกิน 24 ชม.
+        </button>
     </div>
 
     <script>
-        // 📥 1. ใส่ Firebase Config
+        // 📥 Firebase Config ของคุณ
         const firebaseConfig = {
             apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
             authDomain: "obs-live-photo.firebaseapp.com",
@@ -194,70 +135,71 @@
             messagingSenderId: "410755111325",
             appId: "1:410755111325:web:814ca02445f4305267f774"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
 
-        // ตัวแปรเก็บสถานะ (States)
+        // States
         let queueData = [];
         let historyData = [];
         let showingData = null;
-        
         let isAutoPlay = false;
         let playIntervalMs = 10000;
         let timeLeft = 0;
         let countdownTimer = null;
         let currentLoopIndex = 0;
 
-        // วาดหลอด Progress Bar
+        // Init Progress Bar
         const initProgressBar = () => {
             const bar = document.getElementById('progress-bar');
             bar.innerHTML = '';
-            for(let i=0; i<10; i++) {
-                bar.innerHTML += `<div class="progress-chunk" id="chunk-${i}"></div>`;
-            }
+            for(let i=0; i<10; i++) bar.innerHTML += `<div class="progress-chunk" id="chunk-${i}"></div>`;
         }
         initProgressBar();
 
-        // 2. ดึงข้อมูลจาก Database
+        // 1. ส่งค่า Settings ขึ้นจอ
+        const masterSwitch = document.getElementById('master-switch');
+        const animSelect = document.getElementById('anim-select');
+        const masterStatus = document.getElementById('master-status');
+
+        masterSwitch.addEventListener('change', (e) => {
+            masterStatus.className = e.target.checked ? 'text-[10px] text-emerald-400' : 'text-[10px] text-red-400';
+            db.collection('settings').doc('display').set({ isVisible: e.target.checked }, { merge: true });
+        });
+        animSelect.addEventListener('change', (e) => {
+            db.collection('settings').doc('display').set({ animation: e.target.value }, { merge: true });
+        });
+
+        // โหลดค่าเริ่มต้น
+        db.collection('settings').doc('display').get().then(doc => {
+            if(doc.exists) {
+                if(doc.data().isVisible !== undefined) masterSwitch.checked = doc.data().isVisible;
+                if(doc.data().animation) animSelect.value = doc.data().animation;
+                masterSwitch.dispatchEvent(new Event('change'));
+            }
+        });
+
+        // 2. ดึงข้อมูลรูปภาพ
         db.collection('photos').onSnapshot(snapshot => {
             queueData = [];
             historyData = [];
             
-            let stats = { show: 0, hide: 0, lock: 0, total: snapshot.size };
-
             snapshot.forEach(doc => {
                 const item = { id: doc.id, isHidden: false, isLocked: false, ...doc.data() };
                 
-                // เก็บสถิติ
-                if(item.isHidden) stats.hide++;
-                if(item.isLocked) stats.lock++;
-                if(item.status === 'showing' || item.status === 'shown') stats.show++;
-
                 if (item.status === 'showing') showingData = item;
                 else if (item.status === 'waiting') queueData.push(item);
                 else if (item.status === 'shown') historyData.push(item);
             });
 
-            // อัปเดต UI หน้าจอเล็ก (Now Playing)
+            // อัปเดต Preview
             if (showingData) {
                 document.getElementById('live-img').src = showingData.imageUrl;
-                document.getElementById('live-img').classList.remove('hidden');
                 document.getElementById('live-name').innerText = showingData.name;
                 document.getElementById('live-msg').innerText = showingData.message || '-';
-                document.getElementById('live-time').innerText = new Date(showingData.timestamp).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
-                document.getElementById('live-details').style.display = 'block';
-                document.getElementById('live-empty').style.display = 'none';
+                document.getElementById('now-showing-container').classList.remove('hidden');
             } else {
-                document.getElementById('live-img').classList.add('hidden');
-                document.getElementById('live-details').style.display = 'none';
-                document.getElementById('live-empty').style.display = 'block';
+                document.getElementById('now-showing-container').classList.add('hidden');
             }
-
-            // อัปเดต Stats ด้านล่าง
-            document.getElementById('stat-show').innerText = stats.show;
-            document.getElementById('stat-hide').innerText = stats.hide;
-            document.getElementById('stat-lock').innerText = stats.lock;
-            document.getElementById('stat-total').innerText = stats.total;
 
             queueData.sort((a, b) => a.timestamp - b.timestamp);
             historyData.sort((a, b) => b.timestamp - a.timestamp);
@@ -269,31 +211,34 @@
             renderHistory();
         });
 
-        // 3. Render HTML
+        // 3. Render HTML ของแต่ละรายการ (จัด Layout สำหรับพื้นที่แคบ)
         function renderQueue() {
             const list = document.getElementById('queue-list');
-            if(queueData.length === 0) { list.innerHTML = '<div class="text-center text-textDim text-xs mt-10">ไม่มีคิวรอแสดง</div>'; return; }
+            if(queueData.length === 0) { list.innerHTML = '<div class="text-center text-gray-500 mt-6 text-xs">ไม่มีคิวรอแสดง</div>'; return; }
             
-            list.innerHTML = queueData.map((item, index) => {
-                // เช็กสถานะเพื่อเปลี่ยนสีปุ่ม
-                const eyeClass = item.isHidden ? 'text-yellow-500' : 'text-emerald-500 hover:text-yellow-500';
+            list.innerHTML = queueData.map(item => {
+                const eyeClass = item.isHidden ? 'text-yellow-500 bg-yellow-900/20 border-yellow-900/50' : 'text-gray-400 hover:text-white border-borderDim';
                 const eyeIcon = item.isHidden ? 'fa-eye-slash' : 'fa-eye';
-                const lockClass = item.isLocked ? 'text-purple-400 bg-purple-900/30' : 'text-textDim hover:text-purple-400';
+                const lockClass = item.isLocked ? 'text-purple-400 bg-purple-900/20 border-purple-900/50' : 'text-gray-400 hover:text-white border-borderDim';
+                const containerClass = item.isHidden ? 'opacity-50' : '';
                 
                 return `
-                <div class="bg-bgItem rounded-lg p-2.5 flex items-center gap-3 border ${item.isHidden ? 'border-yellow-900/50 opacity-50' : item.isLocked ? 'border-purple-900/50' : 'border-borderDim'} group">
-                    <div class="text-textDim text-xs w-4 text-center"><i class="fa-solid fa-grip-vertical opacity-30"></i></div>
-                    <div class="text-accentBlue font-bold w-4 text-center">${index + 1}</div>
-                    <img src="${item.imageUrl}" class="w-12 h-10 object-cover rounded bg-black">
-                    <div class="flex-1 overflow-hidden">
-                        <div class="font-semibold text-xs truncate text-white ${item.isHidden ? 'line-through text-gray-500' : ''}">${item.name}</div>
-                        <div class="text-[9px] text-textDim">${new Date(item.timestamp).toLocaleTimeString('th-TH')}</div>
+                <div class="bg-bgPanel rounded border border-[#333] p-2 flex flex-col gap-2 ${containerClass}">
+                    <div class="flex gap-2 items-center">
+                        <img src="${item.imageUrl}" class="w-10 h-10 object-cover rounded bg-black shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-xs truncate text-white ${item.isHidden ? 'line-through text-gray-500' : ''}">${item.name}</div>
+                            <div class="text-[9px] text-gray-400 truncate">${item.message || '-'}</div>
+                        </div>
                     </div>
-                    <div class="flex gap-1">
-                        <button onclick="toggleField('${item.id}', 'isHidden', ${!item.isHidden})" class="action-btn w-7 h-7 rounded bg-bgDark flex items-center justify-center ${eyeClass}" title="ซ่อน/แสดง"><i class="fa-solid ${eyeIcon}"></i></button>
-                        <button onclick="toggleField('${item.id}', 'isLocked', ${!item.isLocked})" class="action-btn w-7 h-7 rounded bg-bgDark flex items-center justify-center ${lockClass}" title="ล็อกคิว"><i class="fa-solid fa-lock"></i></button>
-                        <button onclick="pushToLive('${item.id}')" class="action-btn w-7 h-7 rounded bg-accentBlue hover:bg-blue-500 text-white flex items-center justify-center" title="แสดงขึ้นจอ"><i class="fa-solid fa-play"></i></button>
-                        <button onclick="deletePhoto('${item.id}')" class="action-btn w-7 h-7 rounded bg-bgDark hover:bg-red-900/50 text-red-500 flex items-center justify-center"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="flex justify-between items-center border-t border-[#333] pt-2">
+                        <div class="text-[9px] text-gray-500">${new Date(item.timestamp).toLocaleTimeString('th-TH')}</div>
+                        <div class="flex gap-1">
+                            <button onclick="toggleField('${item.id}', 'isHidden', ${!item.isHidden})" class="w-6 h-6 rounded bg-bgMain border flex items-center justify-center text-[10px] ${eyeClass}" title="ซ่อน"><i class="fa-solid ${eyeIcon}"></i></button>
+                            <button onclick="toggleField('${item.id}', 'isLocked', ${!item.isLocked})" class="w-6 h-6 rounded bg-bgMain border flex items-center justify-center text-[10px] ${lockClass}" title="ล็อกคิว"><i class="fa-solid fa-lock"></i></button>
+                            <button onclick="pushToLive('${item.id}')" class="w-6 h-6 rounded bg-accent hover:bg-blue-500 text-white flex items-center justify-center text-[10px]" title="แสดงขึ้นจอ"><i class="fa-solid fa-play"></i></button>
+                            <button onclick="deletePhoto('${item.id}')" class="w-6 h-6 rounded bg-bgMain border border-borderDim hover:bg-red-900/50 text-red-500 flex items-center justify-center text-[10px] ml-1"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
                     </div>
                 </div>
             `}).join('');
@@ -301,15 +246,14 @@
 
         function renderHistory() {
             const list = document.getElementById('history-list');
-            if(historyData.length === 0) { list.innerHTML = '<div class="text-center text-textDim text-xs mt-10">ไม่มีประวัติ</div>'; return; }
-            list.innerHTML = historyData.slice(0,50).map(item => `
-                <div class="bg-bgItem/50 rounded-lg p-2 flex items-center gap-3 border border-borderDim">
-                    <img src="${item.imageUrl}" class="w-10 h-8 object-cover rounded grayscale">
-                    <div class="flex-1 overflow-hidden">
-                        <div class="font-medium text-xs truncate text-gray-400">${item.name}</div>
-                        <div class="text-[9px] text-textDim">${new Date(item.timestamp).toLocaleTimeString('th-TH')}</div>
+            if(historyData.length === 0) { list.innerHTML = '<div class="text-center text-gray-500 mt-6 text-xs">ไม่มีประวัติ</div>'; return; }
+            list.innerHTML = historyData.slice(0,40).map(item => `
+                <div class="bg-bgPanel/50 rounded border border-[#222] p-2 flex items-center gap-2">
+                    <img src="${item.imageUrl}" class="w-8 h-8 object-cover rounded grayscale shrink-0">
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-[11px] truncate text-gray-400">${item.name}</div>
                     </div>
-                    <button onclick="pushToLive('${item.id}')" class="w-7 h-7 rounded bg-bgDark border border-borderDim text-textDim hover:text-white flex items-center justify-center"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button onclick="pushToLive('${item.id}')" class="w-6 h-6 rounded bg-bgMain border border-borderDim text-gray-400 hover:text-white flex items-center justify-center text-[10px]"><i class="fa-solid fa-rotate-right"></i></button>
                 </div>
             `).join('');
         }
@@ -319,7 +263,6 @@
             try {
                 if (showingData) await db.collection('photos').doc(showingData.id).update({ status: 'shown' });
                 await db.collection('photos').doc(docId).update({ status: 'showing' });
-                // รีเซ็ตหลอดเวลา
                 timeLeft = playIntervalMs; 
             } catch (err) { console.error(err); }
         }
@@ -329,14 +272,22 @@
         }
 
         async function deletePhoto(docId) {
-            if(confirm("ลบรูปนี้?")) await db.collection('photos').doc(docId).delete();
+            if(confirm("ลบรูปนี้ทิ้ง?")) await db.collection('photos').doc(docId).delete();
         }
 
         async function clearScreen() {
             if(showingData) await db.collection('photos').doc(showingData.id).update({ status: 'shown' });
         }
+        
+        function autoCleanUp() {
+            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+            db.collection('photos').where('timestamp', '<', oneDayAgo).get().then(snapshot => {
+                snapshot.forEach(doc => doc.ref.delete());
+                alert('ล้างข้อมูลเก่าเรียบร้อย');
+            });
+        }
 
-        // 5. ระบบ Auto Play & Countdown แบบสมูท
+        // 5. ระบบ Auto Play & Countdown
         const autoplaySwitch = document.getElementById('autoplay-switch');
         const timerSelect = document.getElementById('timer-select');
         const loopModeSelect = document.getElementById('loop-mode');
@@ -348,12 +299,10 @@
 
             if (autoplaySwitch.checked) {
                 countdownTimer = setInterval(() => {
-                    timeLeft -= 100; // หักเวลาทุก 100ms
+                    timeLeft -= 100;
                     
-                    // อัปเดตตัวเลข
-                    document.getElementById('countdown-text').innerText = Math.ceil(timeLeft / 1000);
+                    document.getElementById('countdown-text').innerText = Math.ceil(timeLeft / 1000) + 's';
                     
-                    // อัปเดตหลอด Progress
                     const percent = timeLeft / playIntervalMs;
                     const chunksToFill = Math.ceil(percent * 10);
                     for(let i=0; i<10; i++) {
@@ -362,14 +311,12 @@
                         else chunk.classList.remove('filled');
                     }
 
-                    // เมื่อเวลาหมด
                     if (timeLeft <= 0) {
                         triggerNextPhoto();
-                        timeLeft = playIntervalMs; // รีเซ็ตเวลา
+                        timeLeft = playIntervalMs;
                     }
                 }, 100);
             } else {
-                // ปิด Auto Play
                 document.getElementById('countdown-text').innerText = '--';
                 for(let i=0; i<10; i++) document.getElementById(`chunk-${i}`).classList.remove('filled');
             }
@@ -377,7 +324,6 @@
 
         function triggerNextPhoto() {
             const mode = loopModeSelect.value;
-            // กรองเอารูปที่ "ไม่ซ่อน" และ "ไม่ล็อก" เท่านั้น
             const playableQueue = queueData.filter(p => !p.isHidden && !p.isLocked);
             
             if (mode === 'queue' && playableQueue.length > 0) {
@@ -401,27 +347,13 @@
         timerSelect.addEventListener('change', startAutoPlay);
         loopModeSelect.addEventListener('change', startAutoPlay);
 
-        // 6. Keyboard Shortcuts
-        document.addEventListener('keydown', (e) => {
-            // ป้องกันถ้ากำลังพิมพ์ในช่องค้นหา
-            if(e.target.tagName === 'INPUT') return;
-
-            if (e.code === 'Space') {
-                e.preventDefault();
-                triggerNextPhoto(); // ดันรูปถัดไปทันที
-                timeLeft = playIntervalMs; // รีเซ็ตเวลา
-            }
-            if (e.ctrlKey && e.code === 'KeyL') {
-                e.preventDefault();
-                clearScreen();
-            }
-            if (e.ctrlKey && e.code === 'KeyP') {
-                e.preventDefault();
-                autoplaySwitch.checked = !autoplaySwitch.checked;
-                startAutoPlay();
-            }
-        });
-
+        function switchTab(tab) {
+            document.getElementById('tab-queue').className = tab === 'queue' ? 'tab-btn flex-1 py-2 text-center tab-active' : 'tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel';
+            document.getElementById('tab-history').className = tab === 'history' ? 'tab-btn flex-1 py-2 text-center tab-active' : 'tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel';
+            
+            document.getElementById('queue-list').style.display = tab === 'queue' ? 'block' : 'none';
+            document.getElementById('history-list').style.display = tab === 'history' ? 'block' : 'none';
+        }
     </script>
 </body>
 </html>
