@@ -165,14 +165,6 @@
                 </select>
             </div>
 
-            <div class="bg-bgPanel p-2 rounded-lg border border-line flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                    <label class="switch"><input type="checkbox" id="sound-switch"><span class="slider"></span></label>
-                    <span class="font-medium text-xs">เสียงแจ้งเตือนรูปใหม่รออนุมัติ</span>
-                </div>
-                <i class="fa-solid fa-volume-high text-gray-500 text-[11px]"></i>
-            </div>
-
             <button onclick="confirmCleanup()" class="w-full text-[10px] text-gray-400 hover:text-red-400 border border-line hover:border-red-900/50 rounded-lg py-1.5 transition-colors">
                 <i class="fa-solid fa-broom"></i> ล้างข้อมูลเก่าเกิน 24 ชม. (ไม่รวมรูปที่รออนุมัติ)
             </button>
@@ -249,6 +241,13 @@
         </button>
     </div>
 
+    <!-- ===== Bulk actions (history tab only) ===== -->
+    <div id="bulk-actions-history" class="hidden flex gap-1.5 px-1.5 pt-1.5 shrink-0 bg-bgMain">
+        <button onclick="confirmClearHistory()" class="flex-1 text-[9.5px] text-gray-400 hover:text-red-400 bg-bgPanel border border-line rounded-md py-1 transition-colors">
+            <i class="fa-solid fa-trash-can"></i> ลบประวัติทั้งหมด
+        </button>
+    </div>
+
     <!-- ===== Lists ===== -->
     <div class="flex-1 overflow-y-auto bg-bgMain p-1.5 relative">
         <div id="loading-state" class="space-y-1.5">
@@ -303,9 +302,6 @@
         let countdownTimer = null;
         let currentLoopIndex = 0;
         let historyPageSize = 15;
-        let firstSnapshotReceived = false;
-        let prevPendingCount = 0;
-        let soundEnabled = false;
         let currentTab = 'pending';
 
         // ===== Toast helper =====
@@ -353,25 +349,10 @@
         window.addEventListener('online', () => setStatus('online'));
         window.addEventListener('offline', () => { setStatus('offline'); showToast('อินเทอร์เน็ตขาดการเชื่อมต่อ', 'error'); });
 
-        // ===== Notification beep =====
-        function playBeep() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.frequency.value = 880;
-                gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-                osc.start(); osc.stop(ctx.currentTime + 0.35);
-            } catch (e) { /* audio not available, ignore */ }
-        }
-
         // ===== Master switch & settings =====
         const masterSwitch = document.getElementById('master-switch');
         const animSelect = document.getElementById('anim-select');
         const masterStatus = document.getElementById('master-status');
-        const soundSwitch = document.getElementById('sound-switch');
 
         masterSwitch.addEventListener('change', (e) => {
             masterStatus.className = 'text-[10px] mono ' + (e.target.checked ? 'text-emerald-400' : 'text-red-400');
@@ -382,8 +363,6 @@
         animSelect.addEventListener('change', (e) => {
             db.collection('settings').doc('display').set({ animation: e.target.value }, { merge: true });
         });
-        soundSwitch.addEventListener('change', (e) => { soundEnabled = e.target.checked; });
-
         db.collection('settings').doc('display').get().then(doc => {
             if (doc.exists) {
                 if (doc.data().isVisible !== undefined) masterSwitch.checked = doc.data().isVisible;
@@ -419,11 +398,6 @@
             });
             shownData.sort((a, b) => b.timestamp - a.timestamp);
             rejectedData.sort((a, b) => (b.rejectedAt || b.timestamp) - (a.rejectedAt || a.timestamp));
-
-            // Sound alert only for genuinely new incoming submissions
-            if (firstSnapshotReceived && soundEnabled && pendingData.length > prevPendingCount) playBeep();
-            prevPendingCount = pendingData.length;
-            firstSnapshotReceived = true;
 
             document.getElementById('loading-state').classList.add('hidden');
             setStatus('online');
@@ -681,6 +655,18 @@
             });
         }
 
+        function confirmClearHistory() {
+            const total = shownData.length + rejectedData.length;
+            if (total === 0) { showToast('ไม่มีประวัติให้ลบ', 'info'); return; }
+            showConfirm('ลบประวัติทั้งหมด?', `รายการในประวัติทั้งหมด ${total} รายการ (แสดงแล้ว + ปฏิเสธ) จะถูกลบถาวร`, async () => {
+                const batch = db.batch();
+                shownData.forEach(item => batch.delete(db.collection('photos').doc(item.id)));
+                rejectedData.forEach(item => batch.delete(db.collection('photos').doc(item.id)));
+                try { await batch.commit(); showToast('ลบประวัติทั้งหมดแล้ว'); }
+                catch (err) { showToast('ลบประวัติไม่สำเร็จ', 'error'); }
+            });
+        }
+
         async function unlockAll() {
             const locked = queueData.filter(i => i.isLocked);
             if (locked.length === 0) { showToast('ไม่มีรายการที่ถูกล็อก', 'info'); return; }
@@ -790,6 +776,7 @@
                 document.getElementById(t + '-list').style.display = t === tab ? 'block' : 'none';
             });
             document.getElementById('bulk-actions').classList.toggle('hidden', tab !== 'queue');
+            document.getElementById('bulk-actions-history').classList.toggle('hidden', tab !== 'history');
 
             // Hide the pending banner once the admin is looking at the pending tab
             const banner = document.getElementById('pending-banner');
