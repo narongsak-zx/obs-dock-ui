@@ -24,6 +24,7 @@
         .preview-img { max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #3b82f6; }
         .btn-submit { width: 100%; background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 14px; border-radius: 8px; font-family: 'Prompt', sans-serif; font-size: 1.1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
         .btn-submit:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        .note { font-size: 0.85rem; color: #64748b; text-align: center; margin-top: 14px; line-height: 1.5; }
     </style>
 </head>
 <body>
@@ -36,7 +37,7 @@
 
         <div class="upload-form">
             <div class="form-group">
-                <label for="username">ข้อความ</label>
+                <label for="username">ชื่อของคุณ / กลุ่มเพื่อน</label>
                 <!-- เอาคำว่าตัวอย่างออกตามรีเควส -->
                 <input type="text" id="username" placeholder="" required>
             </div>
@@ -56,6 +57,7 @@
                 <img src="" alt="Preview" class="preview-img" id="img-preview">
             </div>
             <button type="button" class="btn-submit" id="submit-btn" style="margin-top: 15px;">ส่งรูปขึ้นจอเลย! 🚀</button>
+            <p class="note">รูปของคุณจะถูกตรวจสอบก่อนขึ้นจอสักครู่นะครับ 🙏</p>
         </div>
     </div>
 
@@ -143,18 +145,19 @@
                 // แทรกพารามิเตอร์ q_auto (ลดไซส์) และ f_auto (แปลงสกุลไฟล์ออโต้) เข้าไปใน URL
                 const optimizedUrl = originalUrl.replace('/upload/', '/upload/q_auto,f_auto/');
 
-                submitBtn.innerText = "กำลังส่งข้อมูลเข้าคิว...";
+                submitBtn.innerText = "กำลังส่งข้อมูลเพื่อรออนุมัติ...";
 
-                // บันทึกข้อมูลและ URL ที่ถูกบีบอัดแล้ว ลง Firebase
+                // บันทึกข้อมูลและ URL ที่ถูกบีบอัดแล้ว ลง Firebase เป็นสถานะ "pending"
+                // ต้องรอแอดมินกดอนุมัติ/ปฏิเสธก่อน ถึงจะเข้าคิว ('waiting') และมีสิทธิ์ขึ้นจอได้
                 await db.collection('photos').add({
                     name: name,
                     message: msg || "", 
                     imageUrl: optimizedUrl, // ใช้ URL ที่ผ่านการบีบอัดแล้ว
-                    status: 'waiting', 
+                    status: 'pending', 
                     timestamp: Date.now()
                 });
 
-                alert('ส่งรูปเข้าคิวเรียบร้อยแล้ว! รอลุ้นขึ้นจอได้เลยยย 🎉');
+                alert('ส่งรูปเรียบร้อยแล้ว! กำลังรอทีมงานตรวจสอบก่อนขึ้นจอนะครับ 🎉');
                 
                 // รีเซ็ตฟอร์มให้กลับมาเป็นหน้าว่างพร้อมรับรูปใหม่
                 document.getElementById('username').value = '';
