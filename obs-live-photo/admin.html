@@ -55,12 +55,12 @@
         input:checked + .slider:before { transform: translateX(14px); }
         .master-toggle:checked + .slider { background-color: #34D399; }
 
-        /* Film-strip progress: sprocket holes that fill with flash amber as time elapses */
+        /* Film-strip progress */
         .filmstrip { display: flex; gap: 2px; height: 10px; padding: 2px 4px; background: #0E0D10; border-radius: 3px; }
         .sprocket { flex: 1; border-radius: 1px; background-color: #322F38; transition: background-color .15s linear; position: relative; }
         .sprocket.filled { background-color: #FFB020; }
 
-        .tab-btn { border-bottom: 2px solid transparent; transition: all .15s; }
+        .tab-btn { border-bottom: 2px solid transparent; transition: all .15s; position: relative; }
         .tab-active { border-bottom: 2px solid #8B7CF6; color: #C9C1FF; font-weight: 600; background-color: #211F26; }
 
         select { background-image: none; text-align: center; }
@@ -71,12 +71,19 @@
         .chip { transition: all .15s; }
         .chip:active { transform: scale(0.92); }
 
-        /* Status dot */
         .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
         .dot-online { background: #34D399; box-shadow: 0 0 6px #34D399aa; }
         .dot-offline { background: #F76E6E; box-shadow: 0 0 6px #F76E6Eaa; }
         .dot-connecting { background: #FBBF24; animation: pulse 1s infinite; }
         @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+        /* Pending badge on tab */
+        .ping-badge { position: absolute; top: 3px; right: 8px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: #FFB020; color: #17161A; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        .ping-dot { position: absolute; top: 3px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: #FFB020; animation: pulse 1.2s infinite; }
+
+        /* Alert banner for new pending submissions */
+        #pending-banner { display: none; }
+        #pending-banner.show { display: flex; }
 
         /* Toast */
         #toast-container { position: fixed; bottom: 8px; left: 8px; right: 8px; z-index: 100; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
@@ -94,6 +101,11 @@
         @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 
         img.thumb { background: #0E0D10 repeating-conic-gradient(#141318 0% 25%, transparent 0% 50%) 50% / 8px 8px; }
+
+        .approve-btn { background: #1F3B31; border: 1px solid #2F6650; color: #6EE7B7; }
+        .approve-btn:active { background: #256345; }
+        .reject-btn { background: #3B2323; border: 1px solid #7A3838; color: #FCA5A5; }
+        .reject-btn:active { background: #5A2A2A; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -121,7 +133,14 @@
         </div>
     </div>
 
-    <!-- ===== Settings drawer (collapsed by default to save space) ===== -->
+    <!-- ===== New submission alert banner ===== -->
+    <div id="pending-banner" onclick="switchTab('pending')" class="items-center gap-2 bg-flash/10 border-b border-flash/40 px-3 py-2 shrink-0 cursor-pointer hover:bg-flash/15 transition-colors">
+        <span class="w-1.5 h-1.5 rounded-full bg-flash animate-pulse shrink-0"></span>
+        <span class="text-[11px] text-flash font-medium flex-1">มีรูปใหม่รออนุมัติ <span id="pending-banner-count" class="mono font-bold">0</span> รายการ</span>
+        <i class="fa-solid fa-chevron-right text-[10px] text-flash"></i>
+    </div>
+
+    <!-- ===== Settings drawer ===== -->
     <div id="settings-drawer" class="drawer bg-bgMain border-b border-borderDim shrink-0">
         <div class="p-2.5 space-y-2">
             <div class="bg-bgPanel p-2 rounded-lg border border-line flex justify-between items-center">
@@ -149,13 +168,13 @@
             <div class="bg-bgPanel p-2 rounded-lg border border-line flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <label class="switch"><input type="checkbox" id="sound-switch"><span class="slider"></span></label>
-                    <span class="font-medium text-xs">เสียงแจ้งเตือนรูปใหม่</span>
+                    <span class="font-medium text-xs">เสียงแจ้งเตือนรูปใหม่รออนุมัติ</span>
                 </div>
                 <i class="fa-solid fa-volume-high text-gray-500 text-[11px]"></i>
             </div>
 
             <button onclick="confirmCleanup()" class="w-full text-[10px] text-gray-400 hover:text-red-400 border border-line hover:border-red-900/50 rounded-lg py-1.5 transition-colors">
-                <i class="fa-solid fa-broom"></i> ล้างข้อมูลเก่าเกิน 24 ชม.
+                <i class="fa-solid fa-broom"></i> ล้างข้อมูลเก่าเกิน 24 ชม. (ไม่รวมรูปที่รออนุมัติ)
             </button>
         </div>
     </div>
@@ -200,7 +219,7 @@
     <div class="bg-bgMain border-b border-borderDim p-2 shrink-0">
         <div class="relative">
             <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 text-[10px]"></i>
-            <input id="search-input" type="text" placeholder="ค้นหาชื่อหรือข้อความ..." oninput="renderQueue(); renderHistory();"
+            <input id="search-input" type="text" placeholder="ค้นหาชื่อหรือข้อความ..." oninput="renderAll()"
                 class="w-full bg-bgPanel border border-line rounded-lg pl-7 pr-7 py-1.5 text-[11px] outline-none focus:border-accent placeholder-gray-600">
             <button id="search-clear" onclick="clearSearch()" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white">
                 <i class="fa-solid fa-circle-xmark text-[11px]"></i>
@@ -210,14 +229,18 @@
 
     <!-- ===== Tabs ===== -->
     <div class="flex bg-bgMain border-b border-borderDim shrink-0">
-        <button onclick="switchTab('queue')" id="tab-queue" class="tab-btn flex-1 py-2 text-center tab-active hover:bg-bgPanel">
+        <button onclick="switchTab('pending')" id="tab-pending" class="tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel">
+            รออนุมัติ (<span id="pending-count">0</span>)
+            <span id="pending-ping" class="ping-dot hidden"></span>
+        </button>
+        <button onclick="switchTab('queue')" id="tab-queue" class="tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel">
             คิว (<span id="queue-count">0</span>) <span id="queue-hidden-badge" class="text-warn hidden"></span>
         </button>
         <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel">ประวัติ (<span id="history-count">0</span>)</button>
     </div>
 
-    <!-- ===== Bulk actions (queue only) ===== -->
-    <div id="bulk-actions" class="flex gap-1.5 px-1.5 pt-1.5 shrink-0 bg-bgMain">
+    <!-- ===== Bulk actions (queue tab only) ===== -->
+    <div id="bulk-actions" class="hidden flex gap-1.5 px-1.5 pt-1.5 shrink-0 bg-bgMain">
         <button onclick="confirmClearQueue()" class="flex-1 text-[9.5px] text-gray-400 hover:text-red-400 bg-bgPanel border border-line rounded-md py-1 transition-colors">
             <i class="fa-solid fa-trash-can"></i> ล้างคิวทั้งหมด
         </button>
@@ -233,6 +256,7 @@
             <div class="skeleton h-16 rounded-lg"></div>
             <div class="skeleton h-16 rounded-lg"></div>
         </div>
+        <div id="pending-list" class="space-y-1.5 hidden"></div>
         <div id="queue-list" class="space-y-1.5 hidden"></div>
         <div id="history-list" class="space-y-1.5 hidden"></div>
     </div>
@@ -266,17 +290,23 @@
         const db = firebase.firestore();
 
         // ===== States =====
-        let queueData = [];
-        let historyData = [];
+        // Photo status lifecycle: pending -> waiting -> showing -> shown
+        //                                   \-> rejected (can be restored to "waiting")
+        let pendingData = [];   // awaiting admin approval
+        let queueData = [];     // approved, waiting to be shown
+        let shownData = [];     // history: already displayed
+        let rejectedData = [];  // history: rejected by admin
         let showingData = null;
+
         let playIntervalMs = 10000;
         let timeLeft = 0;
         let countdownTimer = null;
         let currentLoopIndex = 0;
         let historyPageSize = 15;
         let firstSnapshotReceived = false;
-        let prevQueueCount = 0;
+        let prevPendingCount = 0;
         let soundEnabled = false;
+        let currentTab = 'pending';
 
         // ===== Toast helper =====
         function showToast(message, type = 'success') {
@@ -289,7 +319,7 @@
             setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .2s'; setTimeout(() => el.remove(), 200); }, 2600);
         }
 
-        // ===== Confirm modal helper (replaces window.confirm which is unreliable inside OBS's embedded browser) =====
+        // ===== Confirm modal helper =====
         let modalConfirmCallback = null;
         function showConfirm(title, message, onConfirm) {
             document.getElementById('modal-title').innerText = title;
@@ -318,12 +348,12 @@
             const text = document.getElementById('status-text');
             dot.className = 'dot dot-' + status;
             text.innerText = status === 'online' ? 'ออนไลน์' : status === 'offline' ? 'ขาดการเชื่อมต่อ' : 'กำลังเชื่อมต่อ';
-            text.className = status === 'offline' ? 'text-[9px] text-danger' : status === 'online' ? 'text-[9px] text-gray-500' : 'text-[9px] text-gray-500';
+            text.className = status === 'offline' ? 'text-[9px] text-danger' : 'text-[9px] text-gray-500';
         }
         window.addEventListener('online', () => setStatus('online'));
         window.addEventListener('offline', () => { setStatus('offline'); showToast('อินเทอร์เน็ตขาดการเชื่อมต่อ', 'error'); });
 
-        // ===== Simple notification beep (no external audio file needed) =====
+        // ===== Notification beep =====
         function playBeep() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -337,7 +367,7 @@
             } catch (e) { /* audio not available, ignore */ }
         }
 
-        // ===== Master switch & animation settings =====
+        // ===== Master switch & settings =====
         const masterSwitch = document.getElementById('master-switch');
         const animSelect = document.getElementById('anim-select');
         const masterStatus = document.getElementById('master-status');
@@ -365,51 +395,72 @@
 
         // ===== Live data =====
         db.collection('photos').onSnapshot(snapshot => {
-            queueData = [];
-            historyData = [];
+            pendingData = []; queueData = []; shownData = []; rejectedData = [];
+            let stillShowing = false;
 
             snapshot.forEach(doc => {
                 const item = { id: doc.id, isHidden: false, isLocked: false, priority: false, priorityTimestamp: 0, ...doc.data() };
-                if (item.status === 'showing') showingData = item;
+                if (item.status === 'showing') { showingData = item; stillShowing = true; }
                 else if (item.status === 'waiting') queueData.push(item);
-                else if (item.status === 'shown') historyData.push(item);
+                else if (item.status === 'shown') shownData.push(item);
+                else if (item.status === 'pending') pendingData.push(item);
+                else if (item.status === 'rejected') rejectedData.push(item);
             });
-            if (!snapshot.docs.some(d => d.data().status === 'showing')) showingData = null;
+            if (!stillShowing) showingData = null;
 
-            // Sort: priority (bumped) items float to the front of the queue, in the order they were bumped
+            // Oldest submitted first, so admin reviews in the order people sent them
+            pendingData.sort((a, b) => a.timestamp - b.timestamp);
+
             queueData.sort((a, b) => {
                 if (a.priority && b.priority) return a.priorityTimestamp - b.priorityTimestamp;
                 if (a.priority) return -1;
                 if (b.priority) return 1;
                 return a.timestamp - b.timestamp;
             });
-            historyData.sort((a, b) => b.timestamp - a.timestamp);
+            shownData.sort((a, b) => b.timestamp - a.timestamp);
+            rejectedData.sort((a, b) => (b.rejectedAt || b.timestamp) - (a.rejectedAt || a.timestamp));
 
-            // Sound alert on new incoming photo
-            if (firstSnapshotReceived && soundEnabled && queueData.length > prevQueueCount) playBeep();
-            prevQueueCount = queueData.length;
+            // Sound alert only for genuinely new incoming submissions
+            if (firstSnapshotReceived && soundEnabled && pendingData.length > prevPendingCount) playBeep();
+            prevPendingCount = pendingData.length;
             firstSnapshotReceived = true;
 
             document.getElementById('loading-state').classList.add('hidden');
-            document.getElementById('queue-list').classList.remove('hidden');
             setStatus('online');
 
             updateNowShowing();
 
+            document.getElementById('pending-count').innerText = pendingData.length;
             document.getElementById('queue-count').innerText = queueData.length;
-            document.getElementById('history-count').innerText = historyData.length;
+            document.getElementById('history-count').innerText = shownData.length + rejectedData.length;
+
             const hiddenCount = queueData.filter(i => i.isHidden).length;
             const hiddenBadge = document.getElementById('queue-hidden-badge');
             if (hiddenCount > 0) { hiddenBadge.innerText = `· ${hiddenCount} ซ่อน`; hiddenBadge.classList.remove('hidden'); }
             else hiddenBadge.classList.add('hidden');
 
-            renderQueue();
-            renderHistory();
+            // Pending indicators: tab badge + banner
+            const pendingPing = document.getElementById('pending-ping');
+            const banner = document.getElementById('pending-banner');
+            const bannerCount = document.getElementById('pending-banner-count');
+            if (pendingData.length > 0) {
+                pendingPing.classList.remove('hidden');
+                bannerCount.innerText = pendingData.length;
+                if (currentTab !== 'pending') { banner.classList.add('show'); banner.style.display = 'flex'; }
+                else { banner.classList.remove('show'); banner.style.display = 'none'; }
+            } else {
+                pendingPing.classList.add('hidden');
+                banner.classList.remove('show'); banner.style.display = 'none';
+            }
+
+            renderAll();
         }, err => {
             console.error(err);
             setStatus('offline');
             showToast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ', 'error');
         });
+
+        function renderAll() { renderPending(); renderQueue(); renderHistory(); }
 
         function updateNowShowing() {
             const nextUpRow = document.getElementById('next-up-row');
@@ -434,7 +485,47 @@
             }
         }
 
-        // ===== Render queue =====
+        // ===== Render: pending approval =====
+        function renderPending() {
+            const list = document.getElementById('pending-list');
+            const q = document.getElementById('search-input').value.trim().toLowerCase();
+            let data = pendingData;
+            if (q) data = data.filter(i => (i.name || '').toLowerCase().includes(q) || (i.message || '').toLowerCase().includes(q));
+
+            if (data.length === 0) {
+                list.innerHTML = `<div class="text-center text-gray-500 mt-8 text-xs">
+                    <i class="fa-solid fa-inbox text-lg mb-1.5 block opacity-40"></i>
+                    ${q ? 'ไม่พบรายการที่ค้นหา' : 'ไม่มีรูปรออนุมัติ'}
+                </div>`;
+                return;
+            }
+
+            list.innerHTML = data.map(item => `
+                <div class="bg-bgPanel rounded-lg border border-flash/30 p-2 flex flex-col gap-2">
+                    <div class="flex gap-2 items-start">
+                        <img src="${item.imageUrl}" class="thumb w-14 h-14 object-cover rounded shrink-0" onerror="this.classList.add('opacity-30')">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-xs truncate text-white">${item.name}</div>
+                            <div class="text-[9.5px] text-gray-400 mt-0.5 line-clamp-2">${item.message || '-'}</div>
+                            <div class="text-[9px] text-gray-600 mono mt-1">${new Date(item.timestamp).toLocaleTimeString('th-TH')}</div>
+                        </div>
+                        <button onclick="confirmDeletePhoto('${item.id}')" class="chip w-6 h-6 rounded-md bg-bgMain border border-line hover:bg-red-900/50 text-gray-500 hover:text-red-400 flex items-center justify-center text-[10px] shrink-0" title="ลบทิ้งถาวร (ไม่เก็บบันทึก)">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button onclick="approvePending('${item.id}')" class="chip approve-btn flex-1 rounded-md py-1.5 text-[11px] font-semibold flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-check"></i> อนุมัติ
+                        </button>
+                        <button onclick="rejectPending('${item.id}')" class="chip reject-btn flex-1 rounded-md py-1.5 text-[11px] font-semibold flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-xmark"></i> ปฏิเสธ
+                        </button>
+                    </div>
+                </div>`
+            ).join('');
+        }
+
+        // ===== Render: queue =====
         function renderQueue() {
             const list = document.getElementById('queue-list');
             const q = document.getElementById('search-input').value.trim().toLowerCase();
@@ -442,8 +533,6 @@
 
             let data = queueData;
             if (q) data = data.filter(i => (i.name || '').toLowerCase().includes(q) || (i.message || '').toLowerCase().includes(q));
-
-            document.getElementById('bulk-actions').classList.toggle('hidden', document.getElementById('tab-queue').classList.contains('tab-active') === false);
 
             if (data.length === 0) {
                 list.innerHTML = `<div class="text-center text-gray-500 mt-8 text-xs">
@@ -485,13 +574,20 @@
             }).join('');
         }
 
+        // ===== Render: history (shown + rejected) =====
         function renderHistory() {
             const list = document.getElementById('history-list');
             const q = document.getElementById('search-input').value.trim().toLowerCase();
-            let data = historyData;
-            if (q) data = data.filter(i => (i.name || '').toLowerCase().includes(q) || (i.message || '').toLowerCase().includes(q));
 
-            if (data.length === 0) {
+            let combined = [
+                ...shownData.map(i => ({ ...i, _kind: 'shown' })),
+                ...rejectedData.map(i => ({ ...i, _kind: 'rejected' }))
+            ];
+            combined.sort((a, b) => (b._kind === 'rejected' ? (b.rejectedAt || b.timestamp) : b.timestamp) - (a._kind === 'rejected' ? (a.rejectedAt || a.timestamp) : a.timestamp));
+
+            if (q) combined = combined.filter(i => (i.name || '').toLowerCase().includes(q) || (i.message || '').toLowerCase().includes(q));
+
+            if (combined.length === 0) {
                 list.innerHTML = `<div class="text-center text-gray-500 mt-8 text-xs">
                     <i class="fa-solid fa-clock-rotate-left text-lg mb-1.5 block opacity-40"></i>
                     ${q ? 'ไม่พบรายการที่ค้นหา' : 'ยังไม่มีประวัติ'}
@@ -499,25 +595,49 @@
                 return;
             }
 
-            const shown = data.slice(0, historyPageSize);
-            list.innerHTML = shown.map(item => `
+            const shown = combined.slice(0, historyPageSize);
+            list.innerHTML = shown.map(item => {
+                const isRejected = item._kind === 'rejected';
+                const badge = isRejected
+                    ? '<span class="text-[8.5px] px-1.5 py-0.5 rounded bg-red-900/30 text-red-400 border border-red-900/50">ปฏิเสธ</span>'
+                    : '<span class="text-[8.5px] px-1.5 py-0.5 rounded bg-emerald-900/20 text-emerald-400/80 border border-emerald-900/40">แสดงแล้ว</span>';
+                const secondaryBtn = isRejected
+                    ? `<button onclick="restoreToQueue('${item.id}')" class="chip w-6 h-6 rounded-md bg-bgMain border border-line text-gray-400 hover:text-accent flex items-center justify-center text-[10px]" title="กู้คืนเข้าคิว"><i class="fa-solid fa-clock-rotate-left"></i></button>`
+                    : `<button onclick="pushToLive('${item.id}')" class="chip w-6 h-6 rounded-md bg-bgMain border border-line text-gray-400 hover:text-white flex items-center justify-center text-[10px]" title="แสดงซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>`;
+
+                return `
                 <div class="bg-bgPanel/60 rounded-lg border border-[#2a2730] p-2 flex items-center gap-2">
-                    <img src="${item.imageUrl}" class="thumb w-8 h-8 object-cover rounded grayscale shrink-0" onerror="this.classList.add('opacity-30')">
+                    <img src="${item.imageUrl}" class="thumb w-8 h-8 object-cover rounded ${isRejected ? '' : 'grayscale'} shrink-0" onerror="this.classList.add('opacity-30')">
                     <div class="flex-1 min-w-0">
-                        <div class="font-medium text-[11px] truncate text-gray-400">${item.name}</div>
+                        <div class="font-medium text-[11px] truncate text-gray-300 flex items-center gap-1.5">${item.name} ${badge}</div>
                         <div class="text-[9px] text-gray-600 mono">${new Date(item.timestamp).toLocaleTimeString('th-TH')}</div>
                     </div>
-                    <button onclick="pushToLive('${item.id}')" class="chip w-6 h-6 rounded-md bg-bgMain border border-line text-gray-400 hover:text-white flex items-center justify-center text-[10px]" title="แสดงซ้ำ"><i class="fa-solid fa-rotate-right"></i></button>
-                </div>
-            `).join('');
+                    ${secondaryBtn}
+                    <button onclick="confirmDeletePhoto('${item.id}')" class="chip w-6 h-6 rounded-md bg-bgMain border border-line hover:bg-red-900/50 text-red-500 flex items-center justify-center text-[10px]" title="ลบถาวร"><i class="fa-solid fa-trash-can"></i></button>
+                </div>`;
+            }).join('');
 
-            if (data.length > historyPageSize) {
-                list.innerHTML += `<button onclick="loadMoreHistory()" class="w-full text-[10px] text-gray-400 hover:text-white bg-bgPanel border border-line rounded-lg py-1.5 mt-1">ดูเพิ่มเติม (${data.length - historyPageSize})</button>`;
+            if (combined.length > historyPageSize) {
+                list.innerHTML += `<button onclick="loadMoreHistory()" class="w-full text-[10px] text-gray-400 hover:text-white bg-bgPanel border border-line rounded-lg py-1.5 mt-1">ดูเพิ่มเติม (${combined.length - historyPageSize})</button>`;
             }
         }
         function loadMoreHistory() { historyPageSize += 15; renderHistory(); }
 
-        function clearSearch() { document.getElementById('search-input').value = ''; renderQueue(); renderHistory(); }
+        function clearSearch() { document.getElementById('search-input').value = ''; renderAll(); }
+
+        // ===== Pending approval actions =====
+        async function approvePending(docId) {
+            try { await db.collection('photos').doc(docId).update({ status: 'waiting' }); showToast('อนุมัติแล้ว เข้าคิวรอแสดง'); }
+            catch (err) { showToast('อนุมัติไม่สำเร็จ', 'error'); }
+        }
+        async function rejectPending(docId) {
+            try { await db.collection('photos').doc(docId).update({ status: 'rejected', rejectedAt: Date.now() }); showToast('ปฏิเสธรูปแล้ว', 'info'); }
+            catch (err) { showToast('ดำเนินการไม่สำเร็จ', 'error'); }
+        }
+        async function restoreToQueue(docId) {
+            try { await db.collection('photos').doc(docId).update({ status: 'waiting' }); showToast('ย้ายกลับเข้าคิวแล้ว'); }
+            catch (err) { showToast('ดำเนินการไม่สำเร็จ', 'error'); }
+        }
 
         // ===== Database actions =====
         async function pushToLive(docId) {
@@ -530,14 +650,13 @@
 
         function skipNext() { triggerNextPhoto(true); }
         function skipPrev() {
-            if (historyData.length === 0) { showToast('ไม่มีรูปก่อนหน้าในประวัติ', 'info'); return; }
-            pushToLive(historyData[0].id);
+            if (shownData.length === 0) { showToast('ไม่มีรูปก่อนหน้าในประวัติ', 'info'); return; }
+            pushToLive(shownData[0].id);
         }
 
         async function toggleField(docId, field, value) {
-            try {
-                await db.collection('photos').doc(docId).update({ [field]: value });
-            } catch (err) { showToast('อัปเดตไม่สำเร็จ', 'error'); }
+            try { await db.collection('photos').doc(docId).update({ [field]: value }); }
+            catch (err) { showToast('อัปเดตไม่สำเร็จ', 'error'); }
         }
 
         async function togglePriority(docId, value) {
@@ -579,15 +698,16 @@
         }
 
         function confirmCleanup() {
-            showConfirm('ล้างข้อมูลเก่า?', 'ลบรูปทั้งหมดที่มีอายุเกิน 24 ชั่วโมงออกจากระบบถาวร', async () => {
+            showConfirm('ล้างข้อมูลเก่า?', 'ลบรูปที่มีอายุเกิน 24 ชั่วโมงออกจากระบบถาวร (ไม่รวมรูปที่กำลังแสดงหรือรออนุมัติ)', async () => {
                 const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
                 try {
                     const snapshot = await db.collection('photos').where('timestamp', '<', oneDayAgo).get();
-                    if (snapshot.empty) { showToast('ไม่มีข้อมูลเก่าที่ต้องล้าง', 'info'); return; }
+                    const toDelete = snapshot.docs.filter(doc => !['pending', 'showing'].includes(doc.data().status));
+                    if (toDelete.length === 0) { showToast('ไม่มีข้อมูลเก่าที่ต้องล้าง', 'info'); return; }
                     const batch = db.batch();
-                    snapshot.forEach(doc => batch.delete(doc.ref));
+                    toDelete.forEach(doc => batch.delete(doc.ref));
                     await batch.commit();
-                    showToast(`ล้างข้อมูลเก่าแล้ว ${snapshot.size} รายการ`);
+                    showToast(`ล้างข้อมูลเก่าแล้ว ${toDelete.length} รายการ`);
                 } catch (err) { showToast('ล้างข้อมูลไม่สำเร็จ', 'error'); }
             });
         }
@@ -640,7 +760,7 @@
             if (mode === 'queue' && playableQueue.length > 0) {
                 pushToLive(playableQueue[0].id);
             } else if (mode === 'all') {
-                const playableHistory = historyData.filter(p => !p.isHidden);
+                const playableHistory = shownData.filter(p => !p.isHidden);
                 let allPhotos = [...playableQueue, ...playableHistory];
                 if (showingData && !showingData.isHidden) allPhotos.push(showingData);
                 allPhotos.sort((a, b) => a.timestamp - b.timestamp);
@@ -652,7 +772,7 @@
                     showToast('ไม่มีรูปให้ข้าม', 'info');
                 }
             } else if (manual) {
-                showToast('ไม่มีรูปในคิว', 'info');
+                showToast('ไม่มีรูปในคิว (ลองอนุมัติรูปที่รออยู่ก่อน)', 'info');
             }
             if (autoplaySwitch.checked) timeLeft = playIntervalMs;
         }
@@ -663,14 +783,20 @@
 
         // ===== Tabs =====
         function switchTab(tab) {
-            document.getElementById('tab-queue').className = tab === 'queue' ? 'tab-btn flex-1 py-2 text-center tab-active' : 'tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel';
-            document.getElementById('tab-history').className = tab === 'history' ? 'tab-btn flex-1 py-2 text-center tab-active' : 'tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel';
-
-            document.getElementById('queue-list').style.display = tab === 'queue' ? 'block' : 'none';
-            document.getElementById('history-list').style.display = tab === 'history' ? 'block' : 'none';
+            currentTab = tab;
+            ['pending', 'queue', 'history'].forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                btn.className = t === tab ? 'tab-btn flex-1 py-2 text-center tab-active' : 'tab-btn flex-1 py-2 text-center text-gray-400 hover:bg-bgPanel';
+                document.getElementById(t + '-list').style.display = t === tab ? 'block' : 'none';
+            });
             document.getElementById('bulk-actions').classList.toggle('hidden', tab !== 'queue');
+
+            // Hide the pending banner once the admin is looking at the pending tab
+            const banner = document.getElementById('pending-banner');
+            if (tab === 'pending') { banner.classList.remove('show'); banner.style.display = 'none'; }
+            else if (pendingData.length > 0) { banner.classList.add('show'); banner.style.display = 'flex'; }
         }
-        switchTab('queue');
+        switchTab('pending');
     </script>
 </body>
 </html>
