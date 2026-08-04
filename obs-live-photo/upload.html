@@ -37,13 +37,13 @@
         <div class="upload-form">
             <div class="form-group">
                 <label for="username">ข้อความ</label>
-                <!-- เอาคำว่าตัวอย่างออกแล้วครับ -->
-                <input type="text" id="username" placeholder="ชื่อของคุณ" required>
+                <!-- เอาคำว่าตัวอย่างออกตามรีเควส -->
+                <input type="text" id="username" placeholder="" required>
             </div>
             <div class="form-group">
                 <label for="message">ข้อความ</label>
-                <!-- เอาคำว่าตัวอย่างออกแล้วครับ -->
-                <input type="text" id="message" placeholder="ข้อความอวยพร">
+                <!-- เอาคำว่าตัวอย่างออกตามรีเควส -->
+                <input type="text" id="message" placeholder="">
             </div>
             <div class="file-input-wrapper">
                 <div class="custom-file-btn" id="upload-box">
@@ -63,15 +63,20 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-        // 🌟 1. การตั้งค่า Cloudinary (ใส่ข้อมูลของคุณตรงนี้) 🌟
-        // เปลี่ยนคำว่า YOUR_CLOUD_NAME เป็นชื่อ Cloud Name ของคุณ
+        // ==========================================
+        // 🌟 1. การตั้งค่า Cloudinary 🌟
+        // ==========================================
+        
+        // 🚨 เปลี่ยนคำว่า YOUR_CLOUD_NAME เป็นชื่อ Cloud Name ของคุณ (เช่น vooiwrex)
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/vooiwrex/image/upload"; 
         
-        // ใส่ชื่อ Upload preset ที่คุณตั้งค่าเป็น Unsigned ไว้
+        // 🚨 ใส่ชื่อ Upload preset ที่คุณสร้างเป็นแบบ Unsigned ไว้
         const CLOUDINARY_UPLOAD_PRESET = "obs_live_photo"; 
 
 
-        // 📥 2. ตั้งค่า Firebase (ของคุณเดิม)
+        // ==========================================
+        // 📥 2. การตั้งค่า Firebase (ของคุณเดิม)
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
             authDomain: "obs-live-photo.firebaseapp.com",
@@ -90,6 +95,7 @@
         const imgPreview = document.getElementById('img-preview');
         const submitBtn = document.getElementById('submit-btn');
 
+        // พรีวิวรูปภาพก่อนส่ง
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -103,6 +109,7 @@
             }
         });
 
+        // ลอจิกปุ่มกดส่งข้อมูล
         submitBtn.addEventListener('click', async function() {
             const name = document.getElementById('username').value.trim();
             const msg = document.getElementById('message').value.trim();
@@ -115,10 +122,10 @@
             submitBtn.innerText = "กำลังอัปโหลดรูปภาพ...";
 
             try {
-                // 🚀 ลอจิกการอัปโหลดไปที่ Cloudinary
+                // อัปโหลดไฟล์ไปที่ Cloudinary
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET); // แนบ preset ไปด้วย
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET); 
 
                 const response = await fetch(CLOUDINARY_URL, {
                     method: 'POST',
@@ -127,26 +134,29 @@
 
                 const result = await response.json();
                 
-                // เช็คว่าได้ secure_url กลับมาไหม
                 if(!result.secure_url) {
                     throw new Error('Cloudinary Upload Failed');
                 }
 
-                const imageUrl = result.secure_url;
+                // 🌟 ระบบบีบอัดอัจฉริยะ (Smart Compression & Format Auto)
+                const originalUrl = result.secure_url;
+                // แทรกพารามิเตอร์ q_auto (ลดไซส์) และ f_auto (แปลงสกุลไฟล์ออโต้) เข้าไปใน URL
+                const optimizedUrl = originalUrl.replace('/upload/', '/upload/q_auto,f_auto/');
+
                 submitBtn.innerText = "กำลังส่งข้อมูลเข้าคิว...";
 
-                // บันทึกลง Firebase พร้อมระบุ Timestamp ปัจจุบัน
+                // บันทึกข้อมูลและ URL ที่ถูกบีบอัดแล้ว ลง Firebase
                 await db.collection('photos').add({
                     name: name,
-                    message: msg || "", // ถ้าไม่พิมพ์ข้อความมา ก็ปล่อยว่างไว้ครับ
-                    imageUrl: imageUrl,
+                    message: msg || "", 
+                    imageUrl: optimizedUrl, // ใช้ URL ที่ผ่านการบีบอัดแล้ว
                     status: 'waiting', 
                     timestamp: Date.now()
                 });
 
                 alert('ส่งรูปเข้าคิวเรียบร้อยแล้ว! รอลุ้นขึ้นจอได้เลยยย 🎉');
                 
-                // รีเซ็ตฟอร์ม
+                // รีเซ็ตฟอร์มให้กลับมาเป็นหน้าว่างพร้อมรับรูปใหม่
                 document.getElementById('username').value = '';
                 document.getElementById('message').value = '';
                 fileInput.value = '';
