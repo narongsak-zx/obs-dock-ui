@@ -106,18 +106,6 @@
         .approve-btn:active { background: #256345; }
         .reject-btn { background: #3B2323; border: 1px solid #7A3838; color: #FCA5A5; }
         .reject-btn:active { background: #5A2A2A; }
-
-        /* Smooth crossfade for the "now showing" card when the photo changes,
-           instead of the frame/box disappearing and popping back in */
-        #live-card-inner { transition: opacity .18s ease; }
-        #live-card-inner.live-fade-out { opacity: .15; }
-
-        #live-stop-btn.is-stopped { color: #34D399; background-color: rgba(52,211,153,.12); border-color: rgba(52,211,153,.4); }
-
-        /* Freeze / hold state for the now-showing card */
-        #live-stop-btn.is-frozen { color: #38BDF8; background-color: rgba(56,189,248,.15); border-color: rgba(56,189,248,.5); }
-        #live-card-inner.is-frozen { border-color: rgba(56,189,248,.5); box-shadow: 0 0 0 1px rgba(56,189,248,.25) inset; }
-        .btn-disabled { opacity: .3; pointer-events: none; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -186,28 +174,28 @@
     <!-- ===== Now showing ===== -->
     <div class="bg-bgPanel border-b border-borderDim p-2 shrink-0 hidden" id="now-showing-container">
         <div class="flex justify-between items-center mb-1.5">
-            <span class="text-[10px] font-bold text-flash flex items-center gap-1" id="live-status-label">
-                <span class="w-1.5 h-1.5 rounded-full bg-flash animate-pulse" id="live-status-dot"></span> <span id="live-status-text">กำลังแสดงผล</span>
+            <span class="text-[10px] font-bold text-flash flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-flash animate-pulse" id="live-dot"></span> <span id="live-label-text">กำลังแสดงผล</span>
             </span>
             <span class="text-[11px] font-bold text-flash mono" id="countdown-text">--</span>
         </div>
 
-        <div class="flex gap-2 items-center bg-bgItem p-1.5 rounded-lg border border-line" id="live-card-inner">
+        <div class="flex gap-2 items-center bg-bgItem p-1.5 rounded-lg border border-line">
             <img id="live-img" src="" class="thumb w-14 h-10 object-cover rounded shrink-0" onerror="this.classList.add('opacity-30')">
             <div class="flex-1 overflow-hidden">
                 <div id="live-name" class="font-bold text-white text-xs truncate">...</div>
                 <div id="live-msg" class="text-[9px] text-gray-400 truncate">...</div>
             </div>
-            <button onclick="skipPrev()" id="live-prev-btn" class="w-6 h-6 rounded-md bg-bgMain hover:bg-bgRaised text-gray-400 hover:text-white border border-line transition-colors" title="ย้อนกลับรูปก่อนหน้า">
+            <button onclick="skipPrev()" class="w-6 h-6 rounded-md bg-bgMain hover:bg-bgRaised text-gray-400 hover:text-white border border-line transition-colors" title="ย้อนกลับรูปก่อนหน้า">
                 <i class="fa-solid fa-backward-step text-[10px]"></i>
             </button>
-            <button onclick="toggleFreeze()" id="live-stop-btn" class="w-6 h-6 rounded-md bg-bgMain hover:bg-bgRaised text-gray-400 border border-line transition-colors" title="ค้างจอ (หยุดไม่ให้จอเปลี่ยนรูป)">
-                <i class="fa-solid fa-snowflake text-[10px]"></i>
+            <button onclick="toggleFreeze()" id="freeze-btn" class="w-6 h-6 rounded-md bg-bgMain hover:bg-bgRaised text-gray-400 hover:text-white border border-line transition-colors" title="หยุดชั่วคราว (ค้างรูปนี้ไว้)">
+                <i class="fa-solid fa-pause text-[10px]"></i>
             </button>
-            <button onclick="skipNext()" id="live-next-btn" class="w-6 h-6 rounded-md bg-bgMain hover:bg-bgRaised text-gray-400 hover:text-white border border-line transition-colors" title="ข้ามไปรูปถัดไป">
+            <button onclick="skipNext()" class="w-6 h-6 rounded-md bg-bgMain hover:bg-bgRaised text-gray-400 hover:text-white border border-line transition-colors" title="ข้ามไปรูปถัดไป">
                 <i class="fa-solid fa-forward-step text-[10px]"></i>
             </button>
-            <button onclick="clearScreen()" id="live-clear-btn" class="w-6 h-6 rounded-md bg-bgMain hover:bg-red-900/50 text-gray-400 hover:text-red-400 border border-line transition-colors" title="ล้างหน้าจอ">
+            <button onclick="clearScreen()" class="w-6 h-6 rounded-md bg-bgMain hover:bg-red-900/50 text-gray-400 hover:text-red-400 border border-line transition-colors" title="ล้างหน้าจอ">
                 <i class="fa-solid fa-xmark text-[10px]"></i>
             </button>
         </div>
@@ -318,6 +306,7 @@
         let currentLoopIndex = 0;
         let historyPageSize = 15;
         let currentTab = 'pending';
+        let isFrozen = false; // STOP button: freezes the currently showing photo, pausing auto-advance
 
         // ===== Toast helper =====
         function showToast(message, type = 'success') {
@@ -402,22 +391,21 @@
             });
             if (!stillShowing) showingData = null;
 
-            resortAll();
+            // Oldest submitted first, so admin reviews in the order people sent them
+            pendingData.sort((a, b) => a.timestamp - b.timestamp);
+
+            queueData.sort((a, b) => {
+                if (a.priority && b.priority) return a.priorityTimestamp - b.priorityTimestamp;
+                if (a.priority) return -1;
+                if (b.priority) return 1;
+                return a.timestamp - b.timestamp;
+            });
+            shownData.sort((a, b) => b.timestamp - a.timestamp);
+            rejectedData.sort((a, b) => (b.rejectedAt || b.timestamp) - (a.rejectedAt || a.timestamp));
 
             document.getElementById('loading-state').classList.add('hidden');
             setStatus('online');
 
-            refreshUI();
-        }, err => {
-            console.error(err);
-            setStatus('offline');
-            showToast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ', 'error');
-        });
-
-        // Redraws everything from the current in-memory state. Called both when a
-        // fresh snapshot arrives from Firestore AND immediately after a local
-        // (optimistic) change, so the UI never has to wait for a round-trip.
-        function refreshUI() {
             updateNowShowing();
 
             document.getElementById('pending-count').innerText = pendingData.length;
@@ -444,51 +432,20 @@
             }
 
             renderAll();
-        }
-
-        // Finds a doc by id across every local list, wherever it currently lives
-        function findLocal(docId) {
-            return pendingData.find(i => i.id === docId) || queueData.find(i => i.id === docId)
-                || shownData.find(i => i.id === docId) || rejectedData.find(i => i.id === docId)
-                || (showingData && showingData.id === docId ? showingData : null);
-        }
-        // Removes a doc id from every local list (used before moving/deleting it)
-        function removeLocal(docId) {
-            pendingData = pendingData.filter(i => i.id !== docId);
-            queueData = queueData.filter(i => i.id !== docId);
-            shownData = shownData.filter(i => i.id !== docId);
-            rejectedData = rejectedData.filter(i => i.id !== docId);
-            if (showingData && showingData.id === docId) showingData = null;
-        }
-        function resortAll() {
-            pendingData.sort((a, b) => a.timestamp - b.timestamp);
-            queueData.sort((a, b) => {
-                if (a.priority && b.priority) return a.priorityTimestamp - b.priorityTimestamp;
-                if (a.priority) return -1;
-                if (b.priority) return 1;
-                return a.timestamp - b.timestamp;
-            });
-            shownData.sort((a, b) => b.timestamp - a.timestamp);
-            rejectedData.sort((a, b) => (b.rejectedAt || b.timestamp) - (a.rejectedAt || a.timestamp));
-        }
+        }, err => {
+            console.error(err);
+            setStatus('offline');
+            showToast('เชื่อมต่อฐานข้อมูลไม่สำเร็จ', 'error');
+        });
 
         function renderAll() { renderPending(); renderQueue(); renderHistory(); }
-
-        let lastLiveId = null; // tracks which photo is currently rendered in the "now showing" card
 
         function updateNowShowing() {
             const nextUpRow = document.getElementById('next-up-row');
             if (showingData) {
-                if (showingData.id !== lastLiveId) {
-                    // Photo actually changed: crossfade the frame's content in place
-                    // instead of letting the whole card disappear and reappear.
-                    lastLiveId = showingData.id;
-                    swapLiveCard(showingData);
-                } else {
-                    // Same photo, e.g. only its message/name might differ — update quietly.
-                    document.getElementById('live-name').innerText = showingData.name;
-                    document.getElementById('live-msg').innerText = showingData.message || '-';
-                }
+                document.getElementById('live-img').src = showingData.imageUrl;
+                document.getElementById('live-name').innerText = showingData.name;
+                document.getElementById('live-msg').innerText = showingData.message || '-';
                 document.getElementById('now-showing-container').classList.remove('hidden');
 
                 const playable = queueData.filter(p => !p.isHidden && !p.isLocked);
@@ -502,33 +459,8 @@
                     nextUpRow.classList.add('opacity-30');
                 }
             } else {
-                lastLiveId = null;
                 document.getElementById('now-showing-container').classList.add('hidden');
             }
-        }
-
-        // Preloads the next photo off-screen, then dips the card's opacity, swaps the
-        // image/name/message in one go, and fades back in — a quick crossfade rather
-        // than an abrupt cut (or the card vanishing and popping back up).
-        function swapLiveCard(item) {
-            const card = document.getElementById('live-card-inner');
-            card.classList.add('live-fade-out');
-
-            let applied = false;
-            const applySwap = () => {
-                if (applied) return;
-                applied = true;
-                document.getElementById('live-img').src = item.imageUrl;
-                document.getElementById('live-name').innerText = item.name;
-                document.getElementById('live-msg').innerText = item.message || '-';
-                requestAnimationFrame(() => card.classList.remove('live-fade-out'));
-            };
-
-            const preload = new Image();
-            preload.onload = applySwap;
-            preload.onerror = applySwap;
-            preload.src = item.imageUrl;
-            setTimeout(applySwap, 400); // fallback so a slow/broken image never blocks the swap
         }
 
         // ===== Render: pending approval =====
@@ -672,54 +604,63 @@
         function clearSearch() { document.getElementById('search-input').value = ''; renderAll(); }
 
         // ===== Pending approval actions =====
-        // Every action below updates the local arrays + re-renders FIRST (instant feedback),
-        // then fires the Firestore write in the background. The next real snapshot from
-        // Firestore will reconcile anything if the write ever fails.
-        function approvePending(docId) {
-            const item = findLocal(docId);
-            if (!item) return;
-            item.status = 'waiting';
-            removeLocal(docId); queueData.push(item);
-            resortAll(); refreshUI();
-            showToast('อนุมัติแล้ว เข้าคิวรอแสดง');
-            db.collection('photos').doc(docId).update({ status: 'waiting' })
-                .catch(() => showToast('ซิงค์ไม่สำเร็จ ระบบจะแก้ไขให้อัตโนมัติ', 'error'));
+        async function approvePending(docId) {
+            try { await db.collection('photos').doc(docId).update({ status: 'waiting' }); showToast('อนุมัติแล้ว เข้าคิวรอแสดง'); }
+            catch (err) { showToast('อนุมัติไม่สำเร็จ', 'error'); }
         }
-        function rejectPending(docId) {
-            const item = findLocal(docId);
-            if (!item) return;
-            item.status = 'rejected'; item.rejectedAt = Date.now();
-            removeLocal(docId); rejectedData.push(item);
-            resortAll(); refreshUI();
-            showToast('ปฏิเสธรูปแล้ว', 'info');
-            db.collection('photos').doc(docId).update({ status: 'rejected', rejectedAt: item.rejectedAt })
-                .catch(() => showToast('ซิงค์ไม่สำเร็จ ระบบจะแก้ไขให้อัตโนมัติ', 'error'));
+        async function rejectPending(docId) {
+            try { await db.collection('photos').doc(docId).update({ status: 'rejected', rejectedAt: Date.now() }); showToast('ปฏิเสธรูปแล้ว', 'info'); }
+            catch (err) { showToast('ดำเนินการไม่สำเร็จ', 'error'); }
         }
-        function restoreToQueue(docId) {
-            const item = findLocal(docId);
-            if (!item) return;
-            item.status = 'waiting';
-            removeLocal(docId); queueData.push(item);
-            resortAll(); refreshUI();
-            showToast('ย้ายกลับเข้าคิวแล้ว');
-            db.collection('photos').doc(docId).update({ status: 'waiting' })
-                .catch(() => showToast('ซิงค์ไม่สำเร็จ ระบบจะแก้ไขให้อัตโนมัติ', 'error'));
+        async function restoreToQueue(docId) {
+            try { await db.collection('photos').doc(docId).update({ status: 'waiting' }); showToast('ย้ายกลับเข้าคิวแล้ว'); }
+            catch (err) { showToast('ดำเนินการไม่สำเร็จ', 'error'); }
         }
 
         // ===== Database actions =====
-        function pushToLive(docId) {
-            if (isFrozen) { showToast('จอกำลังค้างอยู่ ปลดล็อกก่อนถึงจะเปลี่ยนรูปได้', 'info'); return; }
-            const item = findLocal(docId);
-            if (!item) return;
-            const previous = showingData;
-            if (previous) { previous.status = 'shown'; shownData.unshift(previous); }
-            item.status = 'showing'; item.priority = false;
-            removeLocal(docId); showingData = item;
-            resortAll(); timeLeft = playIntervalMs; refreshUI();
-            const batch = db.batch();
-            if (previous) batch.update(db.collection('photos').doc(previous.id), { status: 'shown' });
-            batch.update(db.collection('photos').doc(docId), { status: 'showing', priority: false });
-            batch.commit().catch(err => { console.error(err); showToast('ไม่สามารถแสดงรูปได้', 'error'); });
+        async function pushToLive(docId) {
+            try {
+                // Combine both status changes into a single atomic write so Firestore
+                // fires one snapshot update, not two — this keeps the "now showing"
+                // frame in place and just swaps the image/text instead of hiding then
+                // reappearing.
+                const batch = db.batch();
+                if (showingData && showingData.id !== docId) {
+                    batch.update(db.collection('photos').doc(showingData.id), { status: 'shown' });
+                }
+                batch.update(db.collection('photos').doc(docId), { status: 'showing', priority: false });
+                await batch.commit();
+                timeLeft = playIntervalMs;
+            } catch (err) { console.error(err); showToast('ไม่สามารถแสดงรูปได้', 'error'); }
+        }
+
+        // ===== STOP / freeze toggle =====
+        function toggleFreeze() {
+            isFrozen = !isFrozen;
+            const btn = document.getElementById('freeze-btn');
+            const icon = btn.querySelector('i');
+            const dot = document.getElementById('live-dot');
+            const label = document.getElementById('live-label-text');
+
+            if (isFrozen) {
+                btn.classList.add('text-accent', 'bg-accent/10', 'border-accentDim/50');
+                btn.classList.remove('text-gray-400', 'border-line');
+                icon.className = 'fa-solid fa-play text-[10px]';
+                btn.title = 'เล่นต่อ';
+                dot.classList.remove('animate-pulse');
+                label.innerText = 'หยุดชั่วคราว (ค้างรูปนี้ไว้)';
+                document.getElementById('countdown-text').innerText = '⏸';
+                showToast('หยุดการแสดงชั่วคราว รูปนี้จะค้างอยู่บนจอ', 'info');
+            } else {
+                btn.classList.remove('text-accent', 'bg-accent/10', 'border-accentDim/50');
+                btn.classList.add('text-gray-400', 'border-line');
+                icon.className = 'fa-solid fa-pause text-[10px]';
+                btn.title = 'หยุดชั่วคราว (ค้างรูปนี้ไว้)';
+                dot.classList.add('animate-pulse');
+                label.innerText = 'กำลังแสดงผล';
+                timeLeft = playIntervalMs; // reset so it doesn't instantly skip on resume
+                showToast('เล่นต่อแล้ว', 'success');
+            }
         }
 
         function skipNext() { triggerNextPhoto(true); }
@@ -728,81 +669,59 @@
             pushToLive(shownData[0].id);
         }
 
-        function toggleField(docId, field, value) {
-            const item = findLocal(docId);
-            if (!item) return;
-            item[field] = value;
-            refreshUI();
-            db.collection('photos').doc(docId).update({ [field]: value })
-                .catch(() => showToast('อัปเดตไม่สำเร็จ', 'error'));
+        async function toggleField(docId, field, value) {
+            try { await db.collection('photos').doc(docId).update({ [field]: value }); }
+            catch (err) { showToast('อัปเดตไม่สำเร็จ', 'error'); }
         }
 
-        function togglePriority(docId, value) {
-            const item = findLocal(docId);
-            if (!item) return;
-            item.priority = value; item.priorityTimestamp = Date.now();
-            resortAll(); refreshUI();
+        async function togglePriority(docId, value) {
+            await db.collection('photos').doc(docId).update({ priority: value, priorityTimestamp: Date.now() });
             showToast(value ? 'ดันขึ้นต้นคิวแล้ว' : 'ยกเลิกการดันคิวแล้ว', 'success');
-            db.collection('photos').doc(docId).update({ priority: value, priorityTimestamp: item.priorityTimestamp })
-                .catch(() => showToast('ซิงค์ไม่สำเร็จ ระบบจะแก้ไขให้อัตโนมัติ', 'error'));
         }
 
         function confirmDeletePhoto(docId) {
-            showConfirm('ลบรูปนี้?', 'รูปนี้จะถูกลบออกจากระบบถาวรและไม่สามารถกู้คืนได้', () => {
-                removeLocal(docId); refreshUI();
-                showToast('ลบรูปแล้ว');
-                db.collection('photos').doc(docId).delete().catch(() => showToast('ลบไม่สำเร็จ', 'error'));
+            showConfirm('ลบรูปนี้?', 'รูปนี้จะถูกลบออกจากระบบถาวรและไม่สามารถกู้คืนได้', async () => {
+                try { await db.collection('photos').doc(docId).delete(); showToast('ลบรูปแล้ว'); }
+                catch (err) { showToast('ลบไม่สำเร็จ', 'error'); }
             });
         }
 
         function confirmClearQueue() {
             if (queueData.length === 0) { showToast('ไม่มีรายการในคิว', 'info'); return; }
-            showConfirm('ล้างคิวทั้งหมด?', `รูปที่รออยู่ทั้งหมด ${queueData.length} รายการจะถูกลบออกจากคิว`, () => {
-                const ids = queueData.map(i => i.id);
-                queueData = [];
-                refreshUI();
-                showToast('ล้างคิวเรียบร้อย');
+            showConfirm('ล้างคิวทั้งหมด?', `รูปที่รออยู่ทั้งหมด ${queueData.length} รายการจะถูกลบออกจากคิว`, async () => {
                 const batch = db.batch();
-                ids.forEach(id => batch.delete(db.collection('photos').doc(id)));
-                batch.commit().catch(() => showToast('ล้างคิวไม่สำเร็จ', 'error'));
+                queueData.forEach(item => batch.delete(db.collection('photos').doc(item.id)));
+                try { await batch.commit(); showToast('ล้างคิวเรียบร้อย'); }
+                catch (err) { showToast('ล้างคิวไม่สำเร็จ', 'error'); }
             });
         }
 
         function confirmClearHistory() {
             const total = shownData.length + rejectedData.length;
             if (total === 0) { showToast('ไม่มีประวัติให้ลบ', 'info'); return; }
-            showConfirm('ลบประวัติทั้งหมด?', `รายการในประวัติทั้งหมด ${total} รายการ (แสดงแล้ว + ปฏิเสธ) จะถูกลบถาวร`, () => {
-                const ids = [...shownData.map(i => i.id), ...rejectedData.map(i => i.id)];
-                shownData = []; rejectedData = [];
-                refreshUI();
-                showToast('ลบประวัติทั้งหมดแล้ว');
+            showConfirm('ลบประวัติทั้งหมด?', `รายการในประวัติทั้งหมด ${total} รายการ (แสดงแล้ว + ปฏิเสธ) จะถูกลบถาวร`, async () => {
                 const batch = db.batch();
-                ids.forEach(id => batch.delete(db.collection('photos').doc(id)));
-                batch.commit().catch(() => showToast('ลบประวัติไม่สำเร็จ', 'error'));
+                shownData.forEach(item => batch.delete(db.collection('photos').doc(item.id)));
+                rejectedData.forEach(item => batch.delete(db.collection('photos').doc(item.id)));
+                try { await batch.commit(); showToast('ลบประวัติทั้งหมดแล้ว'); }
+                catch (err) { showToast('ลบประวัติไม่สำเร็จ', 'error'); }
             });
         }
 
-        function unlockAll() {
+        async function unlockAll() {
             const locked = queueData.filter(i => i.isLocked);
             if (locked.length === 0) { showToast('ไม่มีรายการที่ถูกล็อก', 'info'); return; }
-            locked.forEach(item => item.isLocked = false);
-            refreshUI();
-            showToast(`ปลดล็อก ${locked.length} รายการแล้ว`);
             const batch = db.batch();
             locked.forEach(item => batch.update(db.collection('photos').doc(item.id), { isLocked: false }));
-            batch.commit().catch(() => showToast('ซิงค์ไม่สำเร็จ ระบบจะแก้ไขให้อัตโนมัติ', 'error'));
+            await batch.commit();
+            showToast(`ปลดล็อก ${locked.length} รายการแล้ว`);
         }
 
-        function clearScreen() {
-            if (isFrozen) { showToast('จอกำลังค้างอยู่ ปลดล็อกก่อนถึงจะล้างจอได้', 'info'); return; }
-            if (!showingData) return;
-            const item = showingData;
-            item.status = 'shown';
-            showingData = null; shownData.unshift(item);
-            resortAll(); refreshUI();
-            showToast('ล้างหน้าจอแล้ว');
-            db.collection('photos').doc(item.id).update({ status: 'shown' })
-                .catch(() => showToast('ซิงค์ไม่สำเร็จ ระบบจะแก้ไขให้อัตโนมัติ', 'error'));
+        async function clearScreen() {
+            if (showingData) {
+                await db.collection('photos').doc(showingData.id).update({ status: 'shown' });
+                showToast('ล้างหน้าจอแล้ว');
+            }
         }
 
         function confirmCleanup() {
@@ -831,7 +750,6 @@
             for (let i = 0; i < 14; i++) bar.innerHTML += `<div class="sprocket" id="sprocket-${i}"></div>`;
         }
         initFilmstrip();
-        updateFreezeUI();
 
         function startAutoPlay() {
             clearInterval(countdownTimer);
@@ -840,6 +758,8 @@
 
             if (autoplaySwitch.checked) {
                 countdownTimer = setInterval(() => {
+                    if (isFrozen) return; // held on the current photo, skip countdown/advance entirely
+
                     timeLeft -= 100;
                     document.getElementById('countdown-text').innerText = Math.max(0, Math.ceil(timeLeft / 1000)) + 's';
 
@@ -861,62 +781,6 @@
                 for (let i = 0; i < 14; i++) { const c = document.getElementById(`sprocket-${i}`); if (c) c.classList.remove('filled'); }
             }
         }
-
-        // ===== Freeze / hold the current on-screen photo =====
-        // "Freeze" locks the now-showing card so nothing (autoplay OR a manual push)
-        // can change what's on screen, until it's unfrozen — like a broadcast
-        // freeze-frame button. Approving/rejecting/queue-editing still works normally
-        // in the background; only the currently displayed photo is held in place.
-        let isFrozen = false;
-        let autoplayBeforeFreeze = false;
-
-        function toggleFreeze() {
-            isFrozen = !isFrozen;
-            if (isFrozen) {
-                autoplayBeforeFreeze = autoplaySwitch.checked;
-                autoplaySwitch.checked = false;
-                showToast('ค้างจอแล้ว — จะไม่มีรูปเปลี่ยนจนกว่าจะปลดล็อก', 'info');
-            } else {
-                autoplaySwitch.checked = autoplayBeforeFreeze;
-                showToast('ปลดล็อกจอแล้ว', 'success');
-            }
-            startAutoPlay();
-            updateFreezeUI();
-        }
-
-        function updateFreezeUI() {
-            const btn = document.getElementById('live-stop-btn');
-            const card = document.getElementById('live-card-inner');
-            const dot = document.getElementById('live-status-dot');
-            const label = document.getElementById('live-status-text');
-            const prevBtn = document.getElementById('live-prev-btn');
-            const nextBtn = document.getElementById('live-next-btn');
-            const clearBtn = document.getElementById('live-clear-btn');
-            if (!btn) return;
-
-            if (isFrozen) {
-                btn.classList.add('is-frozen');
-                btn.title = 'ปลดล็อก (จอกำลังค้างอยู่)';
-                card.classList.add('is-frozen');
-                dot.classList.remove('animate-pulse', 'bg-flash');
-                dot.classList.add('bg-sky-400');
-                label.innerText = 'ค้างจอ';
-                label.parentElement.classList.remove('text-flash');
-                label.parentElement.classList.add('text-sky-400');
-                [prevBtn, nextBtn, clearBtn].forEach(b => b && b.classList.add('btn-disabled'));
-            } else {
-                btn.classList.remove('is-frozen');
-                btn.title = 'ค้างจอ (หยุดไม่ให้จอเปลี่ยนรูป)';
-                card.classList.remove('is-frozen');
-                dot.classList.add('animate-pulse', 'bg-flash');
-                dot.classList.remove('bg-sky-400');
-                label.innerText = 'กำลังแสดงผล';
-                label.parentElement.classList.add('text-flash');
-                label.parentElement.classList.remove('text-sky-400');
-                [prevBtn, nextBtn, clearBtn].forEach(b => b && b.classList.remove('btn-disabled'));
-            }
-        }
-
 
         function triggerNextPhoto(manual) {
             const mode = loopModeSelect.value;
