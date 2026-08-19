@@ -3,241 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OBS Live Photo Layout</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>เว็บไซต์มีการเปลี่ยนแปลงโดเมน</title>
+    <!-- เรียกใช้ Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- เรียกใช้ Font Prompt จาก Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- เรียกใช้ Lucide Icons สำหรับไอคอนปุ่ม -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#0f326e',
+                        'secondary': '#64748b',
+                        'brand-blue': '#2563eb',
+                        'brand-blue-dark': '#1d4ed8',
+                        'bg-blue': '#f4f7fe',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { margin: 0; padding: 0; width: 100vw; height: 100vh; font-family: 'Prompt', sans-serif; background-color: transparent; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        
-        .main-container { 
-            width: 100%; height: 100%; display: flex; background-color: #0b132b; 
-            transition: opacity 0.5s ease, transform 0.5s ease;
-        }
-        .main-container.hidden-screen { opacity: 0; transform: scale(0.98); pointer-events: none; }
-
-        .photo-section { width: 70%; height: 100%; position: relative; background-color: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        
-        #idle-screen {
-            position: absolute;
-            text-align: center;
-            color: white;
-            z-index: 1;
-            transition: opacity 0.5s ease;
-        }
-        #idle-screen h1 { font-size: 3.5rem; margin-bottom: 10px; color: #fff; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        #idle-screen p { font-size: 1.5rem; color: #94a3b8; }
-
-        .photo-section img.main-photo { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            position: absolute;
-            z-index: 2;
+        body {
+            background-color: #f4f7fe;
+            /* เพิ่มลวดลายพื้นหลังคล้ายในรูป */
+            background-image: radial-gradient(circle at 10% 20%, rgba(216, 228, 255, 0.4) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(216, 228, 255, 0.6) 0%, transparent 40%);
+            background-attachment: fixed;
         }
         
-        .anim-fade { transition: opacity 0.6s ease-in-out; opacity: 0; }
-        .anim-fade.active { opacity: 1; }
-        
-        .anim-zoom { transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); opacity: 0; transform: scale(1.1); }
-        .anim-zoom.active { opacity: 1; transform: scale(1); }
-        
-        .anim-slide { transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(40px); }
-        .anim-slide.active { opacity: 1; transform: translateY(0); }
-
-        .photo-overlay { 
-            position: absolute; 
-            bottom: 30px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: auto; 
-            min-width: 40%;
-            max-width: 80%;
-            padding: 15px 40px; 
-            background: rgba(0, 0, 0, 0.65); 
-            border-radius: 20px; 
-            text-align: center; 
-            color: white; 
-            box-sizing: border-box; 
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 10;
-            transition: opacity 0.4s ease;
-            opacity: 0;
-        }
-        .photo-overlay.active { opacity: 1; }
-        
-        @keyframes revealText {
-            0% { opacity: 0; filter: blur(10px); transform: translateY(15px); }
-            100% { opacity: 1; filter: blur(0); transform: translateY(0); }
-        }
-        
-        .reveal-effect h1 { 
-            margin: 0; 
-            font-size: 3.5rem; 
-            font-weight: 600;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); 
-            animation: revealText 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
-        }
-        .reveal-effect p { 
-            margin: 5px 0 0 0; 
-            font-size: 1.8rem; 
-            color: #d1d5db; 
-            animation: revealText 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; 
-            opacity: 0; 
+        /* ตกแต่งเงาของการ์ดให้ดูนุ่มนวล */
+        .glass-card {
+            box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.1);
         }
 
-        .qr-section { width: 30%; height: 100%; background-color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; box-sizing: border-box; border-left: 5px solid #1d4ed8; z-index: 20; }
-        .qr-header { text-align: center; color: #1e3a8a; margin-bottom: 30px; }
-        .qr-header h2 { font-size: 2.5rem; margin: 0; }
-        .qr-header h3 { font-size: 2rem; margin: 0; color: #3b82f6; }
-        .qr-image { width: 80%; max-width: 400px; border: 10px solid #f3f4f6; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .qr-instruction { text-align: center; color: #4b5563; }
-        .qr-instruction h4 { font-size: 1.8rem; margin: 0 0 10px 0; color: #1e3a8a; }
-        .qr-instruction p { font-size: 1.3rem; margin: 0; line-height: 1.5; }
+        /* ลายจุด (Dot Pattern) พื้นหลัง */
+        .bg-dots {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-8 relative overflow-hidden">
 
-    <div class="main-container" id="master-container">
+    <!-- ลวดลายพื้นหลังตกแต่ง (ซ้าย) -->
+    <div class="absolute left-0 top-1/4 w-64 h-64 bg-dots opacity-40 -z-10 rounded-full blur-sm"></div>
+    <div class="absolute left-[-10%] bottom-0 w-96 h-96 bg-blue-100/50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 -z-10"></div>
+    
+    <!-- ลวดลายพื้นหลังตกแต่ง (ขวา) -->
+    <div class="absolute right-10 bottom-1/4 w-48 h-48 bg-dots opacity-40 -z-10 rounded-full blur-sm"></div>
+    <div class="absolute right-[-5%] top-1/4 w-80 h-80 bg-blue-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-70 -z-10"></div>
+
+    <!-- Main Card Container -->
+    <div class="bg-white rounded-[2rem] w-full max-w-3xl p-8 sm:p-12 md:p-16 text-center glass-card relative z-10 mx-auto">
         
-        <div class="photo-section">
-            <div id="idle-screen">
-                <h1>ยินดีต้อนรับเข้าสู่งาน</h1>
-                <p>ร่วมแชร์ความประทับใจขึ้นจอผ่าน QR Code</p>
-            </div>
+        <!-- Illustration Area (กราฟิกจำลองโลกและลูกศร) -->
+        <div class="relative w-48 h-48 mx-auto mb-8 flex justify-center items-center">
+            <!-- ตกแต่งจุดเล็กๆ รอบๆ กราฟิก -->
+            <div class="absolute top-4 left-0 w-1 h-1 bg-blue-400 rounded-full"></div>
+            <div class="absolute bottom-10 right-4 w-1.5 h-1.5 bg-blue-300 rounded-full"></div>
+            <div class="absolute top-1/3 right-0 text-blue-400 font-bold text-xl">+</div>
+            <div class="absolute top-8 left-8 text-gray-300 font-bold text-lg">+</div>
 
-            <img id="display-photo" class="main-photo anim-fade" src="" alt="Live Photo">
-            
-            <div class="photo-overlay" id="photo-overlay">
-                <h1 id="display-name"></h1>
-                <p id="display-message"></p>
-            </div>
+            <!-- กราฟิก SVG วาดโลกและช่องค้นหา (ทดแทนรูป 3D) -->
+            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-xl" xmlns="http://www.w3.org/2000/svg">
+                <!-- ลูกศรหมุนวนรอบหลัง -->
+                <path d="M 40 140 C 0 100, 20 40, 80 20" fill="none" stroke="#dbeafe" stroke-width="8" stroke-linecap="round" />
+                <path d="M 80 20 L 75 10 M 80 20 L 70 25" fill="none" stroke="#dbeafe" stroke-width="4" stroke-linecap="round" />
+                
+                <!-- ลูกโลก (Globe) -->
+                <circle cx="100" cy="100" r="50" fill="#3b82f6" />
+                <!-- เส้นตารางลูกโลก -->
+                <path d="M 100 50 A 25 50 0 0 0 100 150 M 100 50 A 25 50 0 0 1 100 150" fill="none" stroke="#2563eb" stroke-width="2" />
+                <path d="M 100 50 A 50 50 0 0 0 100 150 M 100 50 A 50 50 0 0 1 100 150" fill="none" stroke="#2563eb" stroke-width="2" />
+                <path d="M 54 80 L 146 80 M 50 100 L 150 100 M 54 120 L 146 120" fill="none" stroke="#2563eb" stroke-width="2" />
+
+                <!-- ลูกศรหมุนวนด้านหน้า -->
+                <path d="M 160 60 C 200 100, 180 160, 120 180" fill="none" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round" />
+                <polygon points="120,180 130,172 135,188" fill="#e2e8f0" />
+
+                <!-- กล่องแจ้งเตือน (Alert Bubble) -->
+                <circle cx="140" cy="55" r="16" fill="#2563eb" stroke="white" stroke-width="3" />
+                <text x="140" y="62" fill="white" font-size="20" font-weight="bold" font-family="sans-serif" text-anchor="middle">!</text>
+
+                <!-- Search Bar -->
+                <rect x="35" y="85" width="130" height="30" rx="15" fill="white" />
+                <!-- เงากล่องค้นหา -->
+                <rect x="35" y="86" width="130" height="30" rx="15" fill="black" opacity="0.05" />
+                <text x="50" y="105" fill="#1e3a8a" font-size="14" font-family="Arial, sans-serif" font-weight="bold">www.</text>
+                
+                <!-- ปุ่มแว่นขยาย -->
+                <circle cx="145" cy="100" r="11" fill="#3b82f6" />
+                <!-- ไอคอนแว่นขยายข้างในปุ่ม -->
+                <circle cx="143" cy="98" r="4" fill="none" stroke="white" stroke-width="2" />
+                <line x1="146" y1="101" x2="149" y2="104" stroke="white" stroke-width="2" stroke-linecap="round" />
+            </svg>
         </div>
 
-        <div class="qr-section">
-            <div class="qr-header">
-                <h2>ส่งรูปขึ้นจอ</h2>
-                <h3>สแกน QR Code</h3>
-            </div>
-            <img class="qr-image" src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://narongsak-zx.github.io/obs-dock-ui/obs-live-photo/upload.html" alt="QR Code">
-            <div class="qr-instruction">
-                <h4>📱 สแกนด้วยมือถือ</h4>
-                <p>อัปโหลดรูป / ใส่ชื่อ<br>รูปของคุณจะขึ้นบนจอทันที</p>
-            </div>
-        </div>
+        <!-- Typography Section -->
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-primary mb-4 tracking-tight">
+            เว็บไซต์มีการเปลี่ยนแปลงโดเมน
+        </h1>
+        
+        <p class="text-secondary text-sm sm:text-base leading-relaxed max-w-lg mx-auto mb-10">
+            ขณะนี้เว็บไซต์ได้เปลี่ยนไปใช้ที่อยู่ใหม่ เพื่อให้บริการได้อย่างต่อเนื่อง<br class="hidden sm:block">
+            กรุณาติดต่อผู้ดูแลระบบเพื่อขอที่อยู่เว็บไซต์ใหม่
+        </p>
+
+        <!-- Call to Action Button -->
+        <button class="bg-gradient-to-r from-brand-blue to-brand-blue-dark hover:from-brand-blue-dark hover:to-[#1e40af] text-white font-medium text-base sm:text-lg py-3 px-8 sm:px-10 rounded-full flex items-center justify-center gap-3 mx-auto shadow-lg shadow-blue-500/30 transition-all duration-300 transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-blue-300 active:translate-y-0">
+            <i data-lucide="mail" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+            ขออภัยในความไม่สะดวก
+        </button>
+        
+        <!-- จุดเล็กๆ ตรงกลางด้านล่างตัวหนังสือ (ตามรูป) -->
+        <div class="w-1.5 h-1.5 bg-blue-200 rounded-full mx-auto mt-6"></div>
+
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
+    <!-- Initialize Lucide Icons -->
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD39xzfRK2xkPnABOvSxocfIAOa1ooTGz0",
-            authDomain: "obs-live-photo.firebaseapp.com",
-            projectId: "obs-live-photo",
-            storageBucket: "obs-live-photo.firebasestorage.app",
-            messagingSenderId: "410755111325",
-            appId: "1:410755111325:web:814ca02445f4305267f774"
-        };
-
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.firestore();
-
-        const masterContainer = document.getElementById('master-container');
-        const idleScreen = document.getElementById('idle-screen');
-        const photoEl = document.getElementById('display-photo');
-        const overlayEl = document.getElementById('photo-overlay');
-        const nameEl = document.getElementById('display-name');
-        const messageEl = document.getElementById('display-message');
-
-        let currentAnimClass = 'anim-fade';
-        let emptyTimeout; // 🌟 ตัวแปรเก็บเวลาสำหรับดีเลย์หน้าจอดำ
-
-        db.collection('settings').doc('display').onSnapshot(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                
-                if (data.isVisible === false) masterContainer.classList.add('hidden-screen');
-                else masterContainer.classList.remove('hidden-screen');
-
-                if (data.animation) {
-                    photoEl.classList.remove('anim-fade', 'anim-zoom', 'anim-slide');
-                    currentAnimClass = `anim-${data.animation}`;
-                    photoEl.classList.add(currentAnimClass);
-                }
-            }
-        });
-
-        db.collection('photos').where('status', '==', 'showing').onSnapshot((snapshot) => {
-            if (snapshot.empty) {
-                // 🌟 หน่วงเวลา 1.5 วินาที เพื่อเช็กว่าเป็นการสลับรูป หรือตั้งใจเคลียร์จอจริงๆ
-                emptyTimeout = setTimeout(() => {
-                    photoEl.classList.remove('active');
-                    overlayEl.classList.remove('active');
-                    overlayEl.classList.remove('reveal-effect');
-                    idleScreen.style.opacity = '1';
-                    setTimeout(() => { photoEl.src = ''; }, 500);
-                }, 1500); 
-                return;
-            }
-
-            // 🌟 ถ้ารูปใหม่มาถึงก่อน 1.5 วินาที ให้ยกเลิกคำสั่งโชว์หน้าจอดำซะ!
-            if (emptyTimeout) {
-                clearTimeout(emptyTimeout);
-            }
-
-            let latestData = null;
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                if (!latestData || data.timestamp > latestData.timestamp) {
-                    latestData = data;
-                }
-            });
-            
-            if (latestData && photoEl.src !== latestData.imageUrl) {
-                
-                photoEl.classList.remove('active');
-                overlayEl.classList.remove('active');
-                overlayEl.classList.remove('reveal-effect');
-                idleScreen.style.opacity = '0';
-                
-                const imgUrl = latestData.imageUrl;
-                const preloader = new Image();
-                let isLoaded = false;
-                
-                const showImageNow = () => {
-                    if (isLoaded) return;
-                    isLoaded = true;
-                    
-                    setTimeout(() => {
-                        photoEl.src = imgUrl;
-                        nameEl.innerText = latestData.name;
-                        
-                        if (latestData.message && latestData.message.trim() !== '') {
-                            messageEl.innerText = latestData.message;
-                            messageEl.style.display = 'block';
-                        } else {
-                            messageEl.style.display = 'none';
-                        }
-                        
-                        photoEl.classList.add('active');
-                        overlayEl.classList.add('active');
-                        overlayEl.classList.add('reveal-effect');
-                    }, 300);
-                };
-
-                preloader.onload = showImageNow;
-                preloader.onerror = showImageNow;
-                setTimeout(showImageNow, 3000); 
-                preloader.src = imgUrl;
-
-            } 
-            else if (latestData && !photoEl.classList.contains('active')) {
-                idleScreen.style.opacity = '0';
-                photoEl.classList.add('active');
-                overlayEl.classList.add('active');
-                overlayEl.classList.add('reveal-effect');
-            }
-        });
+        lucide.createIcons();
     </script>
 </body>
 </html>
+
