@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>error</title>
     <!-- เรียกใช้ Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -35,6 +35,9 @@
             height: 100%;
             margin: 0;
             background-color: #ffffff;
+            overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: pan-x pan-y; /* ป้องกันการ pinch-zoom บนมือถือ/แท็บเล็ต */
         }
 
         /* ลายจุด (Dot Pattern) พื้นหลัง */
@@ -44,7 +47,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen w-full grid place-items-center p-4 sm:p-8 md:p-12 relative overflow-x-hidden bg-white">
+<body class="h-screen w-full grid place-items-center p-4 sm:p-8 md:p-12 relative overflow-hidden bg-white">
 
     <!-- ลวดลายพื้นหลังตกแต่ง (ซ้าย) -->
     <div class="absolute left-0 top-1/4 w-40 h-40 sm:w-64 sm:h-64 bg-dots opacity-40 -z-10 rounded-full blur-sm"></div>
@@ -111,13 +114,12 @@
             เว็บไซต์มีการเปลี่ยนแปลงโดเมน
         </h1>
 
-        <!-- กรอบข้อความรายละเอียด -->
-        <div class="bg-blue-50/60 border border-blue-100 rounded-2xl px-5 py-4 sm:px-7 sm:py-5 mb-6 sm:mb-8 max-w-xs sm:max-w-md md:max-w-lg mx-auto">
-            <p class="text-secondary text-sm sm:text-base leading-relaxed">
-                ขณะนี้เว็บไซต์ได้เปลี่ยนไปใช้ที่อยู่ใหม่ เพื่อให้บริการได้อย่างต่อเนื่อง<br class="hidden sm:block">
-                กรุณาติดต่อผู้ดูแลระบบเพื่อขอที่อยู่เว็บไซต์ใหม่
-            </p>
-        </div>
+        <!-- ข้อความรายละเอียด -->
+        <p class="text-secondary text-sm sm:text-base leading-relaxed max-w-xs sm:max-w-md md:max-w-lg mx-auto mb-6 sm:mb-8">
+            ขณะนี้เว็บไซต์ได้เปลี่ยนไปใช้โดเมนใหม่<br>
+            เพื่อให้สามารถให้บริการได้อย่างต่อเนื่อง<br>
+            กรุณาติดต่อผู้ดูแลระบบเพื่อขอที่อยู่เว็บไซต์ใหม่
+        </p>
 
     </div>
 
