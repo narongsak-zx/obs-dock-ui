@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Waste Challenge: ภารกิจพิชิตขยะ</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      font-family: "Noto Sans Thai", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7faf7;
+      color: #1e293b;
+      font-family: "Noto Sans Thai", sans-serif;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .answer-button.selected,
+    .choice-card.selected,
+    .bin-palette.selected {
+      border-color: #059669;
+      background: #ecfdf5;
+      color: #064e3b;
+    }
+
+    .map-zone {
+      min-height: 135px;
+      transition: all 0.2s ease;
+    }
+
+    .map-zone.drag-over {
+      border-color: #059669;
+      background: #d1fae5;
+      transform: scale(1.02);
+    }
+
+    .map-bin {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 0.25rem 0.25rem 0 0;
+      border-radius: 9999px;
+      padding: 0.3rem 0.55rem;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HOME -->
+  <main id="home-screen" class="screen active min-h-screen bg-[#f7faf7] px-4 py-8 sm:px-8 sm:py-12">
+    <div class="mx-auto flex min-h-[80vh] max-w-5xl flex-col justify-center">
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800">
+          <i data-lucide="leaf" class="h-4 w-4"></i>
+          นวัตกรรมสื่อการเรียนรู้
+        </div>
+
+        <div class="mt-7 flex items-start gap-4">
+          <div class="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-emerald-600 text-white shadow-lg shadow-emerald-200">
+            <i data-lucide="recycle" class="h-8 w-8"></i>
+          </div>
+
+          <div>
+            <h1 class="text-4xl font-extrabold leading-none tracking-tight text-slate-900 sm:text-6xl">
+              SMART WASTE
+              <span class="block text-emerald-600">CHALLENGE</span>
+            </h1>
+          </div>
+        </div>
+
+        <p class="mt-7 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
+          เรียนรู้การจัดการขยะ ผ่านภารกิจและสถานการณ์จำลอง
+        </p>
+
+        <div class="mt-8 grid gap-3 sm:grid-cols-3">
+          <div class="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white p-4 text-sm font-semibold text-slate-700">
+            <i data-lucide="target" class="h-5 w-5 text-emerald-600"></i>
+            3 ภารกิจการเรียนรู้
+          </div>
+          <div class="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white p-4 text-sm font-semibold text-slate-700">
+            <i data-lucide="clock-3" class="h-5 w-5 text-emerald-600"></i>
+            ใช้เวลาประมาณ 20–30 นาที
+          </div>
+          <div class="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white p-4 text-sm font-semibold text-slate-700">
+            <i data-lucide="award" class="h-5 w-5 text-emerald-600"></i>
+            คะแนนเต็ม 100 คะแนน
+          </div>
+        </div>
+
+        <button
+          onclick="showScreen('mission-select-screen')"
+          class="mt-9 inline-flex min-h-14 items-center gap-3 rounded-2xl bg-emerald-600 px-7 text-lg font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700 active:scale-[0.98]"
+        >
+          <i data-lucide="play" class="h-5 w-5 fill-current"></i>
+          เริ่มภารกิจ
+        </button>
+
+        <p class="mt-8 text-sm font-medium text-slate-500">
+          พร้อมหรือยัง? มาช่วยกันทำให้โรงเรียนสะอาดขึ้น
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- MISSION SELECT -->
+  <main id="mission-select-screen" class="screen min-h-screen bg-[#f7faf7]">
+    <header class="flex items-center justify-between border-b border-emerald-100 bg-white px-4 py-4 sm:px-8">
+      <div class="flex items-center gap-3">
+        <div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
+          <i data-lucide="leaf" class="h-5 w-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900">เลือกภารกิจ</h1>
+          <p class="text-sm text-slate-500">เรียนรู้ทีละขั้น แล้วนำความรู้ไปใช้จริง</p>
+        </div>
+      </div>
+
+      <button onclick="showScreen('home-screen')" class="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-emerald-50">
+        <i data-lucide="home" class="h-4 w-4"></i>
+        <span class="hidden sm:inline">หน้าหลัก</span>
+      </button>
+    </header>
+
+    <section class="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-12">
+      <p class="text-sm font-bold uppercase tracking-wider text-emerald-700">Smart Waste Challenge</p>
+      <h2 class="mt-2 text-3xl font-bold text-slate-900">เลือกภารกิจของคุณ</h2>
+      <p class="mt-2 text-slate-600">ทำภารกิจตามลำดับเพื่อปลดล็อกด่านต่อไป</p>
+
+      <div id="mission-cards" class="mt-8 grid gap-5 md:grid-cols-3"></div>
+    </section>
+  </main>
+
+  <!-- MISSION 1 -->
+  <main id="mission1-screen" class="screen min-h-screen bg-[#f7faf7]">
+    <header class="flex items-center justify-between border-b border-emerald-100 bg-white px-4 py-4 sm:px-8">
+      <div class="flex items-center gap-3">
+        <div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
+          <i data-lucide="recycle" class="h-5 w-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900">Mission 01: แยกให้ถูก</h1>
+          <p class="text-sm text-slate-500">10 ข้อ · คะแนนเต็ม 50 คะแนน</p>
+        </div>
+      </div>
+      <button onclick="showScreen('home-screen')" class="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-emerald-50">
+        <i data-lucide="home" class="h-4 w-4"></i>
+        <span class="hidden sm:inline">หน้าหลัก</span>
+      </button>
+    </header>
+
+    <section class="mx-auto max-w-3xl px-4 py-7 sm:px-8">
+      <button onclick="showScreen('mission-select-screen')" class="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-700">
+        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+        กลับไปเลือกภารกิจ
+      </button>
+      <div id="mission1-content"></div>
+    </section>
+  </main>
+
+  <!-- MISSION 2 -->
+  <main id="mission2-screen" class="screen min-h-screen bg-[#f7faf7]">
+    <header class="flex items-center justify-between border-b border-emerald-100 bg-white px-4 py-4 sm:px-8">
+      <div class="flex items-center gap-3">
+        <div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
+          <i data-lucide="brain-circuit" class="h-5 w-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900">Mission 02: นักแก้ปัญหา</h1>
+          <p class="text-sm text-slate-500">5 สถานการณ์ · คะแนนเต็ม 30 คะแนน</p>
+        </div>
+      </div>
+      <button onclick="showScreen('home-screen')" class="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-emerald-50">
+        <i data-lucide="home" class="h-4 w-4"></i>
+        <span class="hidden sm:inline">หน้าหลัก</span>
+      </button>
+    </header>
+
+    <section class="mx-auto max-w-3xl px-4 py-7 sm:px-8">
+      <button onclick="showScreen('mission-select-screen')" class="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-700">
+        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+        กลับไปเลือกภารกิจ
+      </button>
+      <div id="mission2-content"></div>
+    </section>
+  </main>
+
+  <!-- MISSION 3 -->
+  <main id="mission3-screen" class="screen min-h-screen bg-[#f7faf7]">
+    <header class="flex items-center justify-between border-b border-emerald-100 bg-white px-4 py-4 sm:px-8">
+      <div class="flex items-center gap-3">
+        <div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
+          <i data-lucide="school" class="h-5 w-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900">Mission 03: ภารกิจโรงเรียน</h1>
+          <p class="text-sm text-slate-500">ออกแบบระบบจัดการขยะ · คะแนนเต็ม 20 คะแนน</p>
+        </div>
+      </div>
+      <button onclick="showScreen('home-screen')" class="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-emerald-50">
+        <i data-lucide="home" class="h-4 w-4"></i>
+        <span class="hidden sm:inline">หน้าหลัก</span>
+      </button>
+    </header>
+
+    <section class="mx-auto max-w-5xl px-4 py-7 sm:px-8">
+      <button onclick="showScreen('mission-select-screen')" class="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-emerald-700">
+        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+        กลับไปเลือกภารกิจ
+      </button>
+      <div id="mission3-content"></div>
+    </section>
+  </main>
+
+  <!-- RESULT -->
+  <main id="result-screen" class="screen min-h-screen bg-[#f7faf7]">
+    <header class="flex items-center justify-between border-b border-emerald-100 bg-white px-4 py-4 sm:px-8">
+      <div class="flex items-center gap-3">
+        <div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
+          <i data-lucide="award" class="h-5 w-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900">ผลการเรียนรู้</h1>
+          <p class="text-sm text-slate-500">สรุปผลจากทั้ง 3 ภารกิจ</p>
+        </div>
+      </div>
+    </header>
+    <section id="result-content" class="mx-auto max-w-3xl px-4 py-8 sm:px-8"></section>
+  </main>
+
+  <!-- REVIEW -->
+  <main id="review-screen" class="screen min-h-screen bg-[#f7faf7]">
+    <header class="flex items-center justify-between border-b border-emerald-100 bg-white px-4 py-4 sm:px-8">
+      <div class="flex items-center gap-3">
+        <div class="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white">
+          <i data-lucide="book-open-check" class="h-5 w-5"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900">สรุปการเรียนรู้</h1>
+          <p class="text-sm text-slate-500">ทบทวนสิ่งที่ได้จากภารกิจ</p>
+        </div>
+      </div>
+    </header>
+    <section id="review-content" class="mx-auto max-w-4xl px-4 py-8 sm:px-8"></section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "smartWasteChallengeV2";
+
+    const categories = {
+      general: { label: "ขยะทั่วไป", color: "bg-slate-600", icon: "trash-2" },
+      recyclable: { label: "ขยะรีไซเคิล", color: "bg-amber-500", icon: "refresh-cw" },
+      organic: { label: "ขยะอินทรีย์", color: "bg-emerald-600", icon: "apple" },
+      hazardous: { label: "ขยะอันตราย", color: "bg-red-500", icon: "triangle-alert" }
+    };
+
+    const wasteItems = [
+      {
+        name: "ขวดน้ำพลาสติก", emoji: "🧴", category: "recyclable",
+        explanation: "ขวดพลาสติกเป็นขยะรีไซเคิล ควรเทของเหลวออกและแยกให้สะอาดก่อนทิ้ง",
+        reasons: [
+          "เป็นวัสดุที่สามารถนำกลับมาแปรรูปใช้ใหม่ได้ เมื่อแยกและทำความสะอาด",
+          "เป็นขยะที่ยังมีประโยชน์ จึงไม่ควรทิ้งรวมทั้งหมด",
+          "เพราะพลาสติกย่อยสลายเองได้อย่างรวดเร็ว"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "กระป๋องเครื่องดื่ม", emoji: "🥫", category: "recyclable",
+        explanation: "กระป๋องโลหะสามารถคัดแยกและนำไปหลอมเพื่อใช้ใหม่ได้",
+        reasons: [
+          "โลหะสามารถคัดแยกและนำไปหลอมเพื่อใช้ใหม่ได้",
+          "กระป๋องดูแข็งแรง จึงน่าจะใช้ประโยชน์ได้อีก",
+          "เพราะกระป๋องเป็นเศษอาหาร"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "เศษอาหาร", emoji: "🍚", category: "organic",
+        explanation: "เศษอาหารเป็นขยะอินทรีย์ ย่อยสลายได้และอาจนำไปทำปุ๋ยหมักได้",
+        reasons: [
+          "ย่อยสลายได้และอาจนำไปทำปุ๋ยหมักได้",
+          "เป็นขยะจากธรรมชาติ จึงควรแยกออกจากพลาสติก",
+          "เพราะสามารถนำไปหลอมเป็นโลหะได้"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "เปลือกกล้วย", emoji: "🍌", category: "organic",
+        explanation: "เปลือกกล้วยเป็นวัสดุอินทรีย์ที่ย่อยสลายได้ เหมาะกับการทำปุ๋ยหมัก",
+        reasons: [
+          "เป็นวัสดุอินทรีย์ที่ย่อยสลายและทำปุ๋ยได้",
+          "มาจากผลไม้ จึงควรทิ้งแยกจากขยะอื่น",
+          "มีสารพิษรุนแรง จึงต้องเก็บในถังขยะอันตราย"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "กล่องกระดาษ", emoji: "📦", category: "recyclable",
+        explanation: "กล่องกระดาษที่สะอาดและแห้งสามารถนำไปรีไซเคิลได้ ควรพับให้แบนเพื่อลดพื้นที่",
+        reasons: [
+          "กระดาษที่สะอาดและแห้งสามารถนำกลับมารีไซเคิลได้",
+          "สามารถพับให้เล็กลงเพื่อช่วยประหยัดพื้นที่",
+          "เพราะกระดาษไม่สามารถนำไปใช้ประโยชน์ได้อีก"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "ถ่านไฟฉาย", emoji: "🔋", category: "hazardous",
+        explanation: "ถ่านไฟฉายอาจมีสารเคมีและโลหะหนัก จึงต้องแยกส่งจุดรับขยะอันตราย",
+        reasons: [
+          "อาจมีสารเคมีรั่วไหล จึงต้องรวบรวมส่งจุดรับขยะอันตราย",
+          "ไม่ควรทิ้งปะปนกับขยะทั่วไป",
+          "เพราะสามารถนำไปทำปุ๋ยได้"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "หลอดไฟ", emoji: "💡", category: "hazardous",
+        explanation: "หลอดไฟบางชนิดแตกง่ายและอาจมีสารที่เป็นอันตราย จึงควรแยกเก็บอย่างระมัดระวัง",
+        reasons: [
+          "อาจแตกและมีสารที่ไม่ควรปนเปื้อนในขยะทั่วไป",
+          "ควรแยกเก็บเพื่อป้องกันการบาดเจ็บจากการแตก",
+          "เพราะหลอดไฟเป็นเศษอาหาร"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "ถุงขนม", emoji: "🍿", category: "general",
+        explanation: "ถุงขนมส่วนใหญ่มักเป็นพลาสติกหลายชั้น จึงรีไซเคิลได้ยากและควรทิ้งเป็นขยะทั่วไป",
+        reasons: [
+          "วัสดุหลายชั้นรีไซเคิลได้ยาก จึงควรลดการใช้และทิ้งให้ถูกถัง",
+          "เป็นพลาสติกที่ควรพยายามลดการใช้",
+          "สามารถย่อยสลายเป็นปุ๋ยได้ทันที"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "กระดาษใช้แล้ว", emoji: "📄", category: "recyclable",
+        explanation: "กระดาษใช้แล้วที่ไม่เปื้อนอาหารหรือคราบน้ำมันสามารถนำไปรีไซเคิลได้",
+        reasons: [
+          "กระดาษที่สะอาดสามารถนำกลับไปผลิตเป็นกระดาษใหม่ได้",
+          "ควรใช้กระดาษให้ครบทั้งสองหน้าก่อนทิ้ง",
+          "กระดาษทุกชนิดต้องเผาทำลายเท่านั้น"
+        ],
+        bestReason: 0
+      },
+      {
+        name: "กระป๋องสเปรย์", emoji: "🧯", category: "hazardous",
+        explanation: "กระป๋องสเปรย์อาจมีสารเคมีและแรงดันตกค้าง จึงต้องแยกเป็นขยะอันตราย",
+        reasons: [
+          "อาจมีสารเคมีและแรงดันตกค้าง ต้องส่งจัดการอย่างปลอดภัย",
+          "ไม่ควรเจาะหรือเผากระป๋องเอง",
+          "เป็นขยะอินทรีย์เพราะมีลักษณะเป็นกระป๋อง"
+        ],
+        bestReason: 0
+      }
+    ];
+
+    const scenarios = [
+      {
+        title: "หลังพักกลางวัน",
+        description: "มีเศษอาหารจำนวนมากถูกทิ้งรวมกับขวดน้ำและถุงพลาสติกในถังเดียว",
+        options: [
+          ["ทิ้งทั้งหมดรวมกัน เพราะสะดวกที่สุด", 0, "ไม่เหมาะสม", "การทิ้งรวมกันทำให้วัสดุรีไซเคิลเปื้อนและนำกลับมาใช้ได้ยากขึ้น"],
+          ["แยกเศษอาหารออกจากขวดน้ำและวัสดุรีไซเคิล", 6, "เหมาะสมมาก", "ถูกต้อง การแยกตั้งแต่ต้นทางช่วยให้เศษอาหารจัดการได้ง่าย และขวดน้ำยังรีไซเคิลได้"],
+          ["นำขยะทั้งหมดไปเผา", 0, "ไม่เหมาะสม", "การเผาขยะปะปนกันอาจก่อมลพิษ และไม่ใช่แนวทางแรกที่เหมาะสม"],
+          ["รวบรวมขยะไว้ก่อน แล้วค่อยแยกเมื่อถังเต็ม", 2, "มีแนวคิดถูกบางส่วน", "มีความตั้งใจจะแยกขยะ แต่ควรแยกทันทีเพื่อลดกลิ่นและการปนเปื้อน"]
+        ]
+      },
+      {
+        title: "ถ่านไฟฉายในห้องเรียน",
+        description: "พบถ่านไฟฉายใช้แล้วหลายก้อนอยู่ในถังขยะทั่วไปหน้าห้องเรียน",
+        options: [
+          ["นำไปใส่ถังขยะอันตรายหรือจุดรับรวบรวมถ่านใช้แล้ว", 6, "เหมาะสมมาก", "ถูกต้อง เพราะถ่านอาจมีสารเคมีที่ไม่ควรปนเปื้อนกับขยะทั่วไป"],
+          ["โยนลงถังขยะทั่วไปเหมือนเดิม", 0, "ไม่เหมาะสม", "ถ่านควรแยกจากขยะทั่วไปเพื่อลดความเสี่ยงต่อสิ่งแวดล้อม"],
+          ["เก็บรวมไว้ในกล่องก่อน โดยยังไม่ส่งต่อ", 4, "เหมาะสมบางส่วน", "การรวบรวมเป็นจุดเริ่มต้นที่ดี แต่ควรนำส่งจุดรับขยะอันตรายต่อไป"],
+          ["นำไปฝังในดินหลังโรงเรียน", 0, "ไม่เหมาะสม", "การฝังอาจทำให้สารเคมีปนเปื้อนในดินและน้ำใต้ดิน"]
+        ]
+      },
+      {
+        title: "งานกีฬาสี",
+        description: "กิจกรรมกีฬาสีทำให้มีแก้วพลาสติกใช้ครั้งเดียวจำนวนมาก",
+        options: [
+          ["แจกแก้วใช้ครั้งเดียวเพิ่มให้ทุกคน", 0, "ไม่เหมาะสม", "ทำให้ปริมาณขยะเพิ่มขึ้นโดยไม่จำเป็น"],
+          ["รณรงค์ให้นำแก้วหรือกระบอกน้ำส่วนตัวมาใช้ และจัดจุดเติมน้ำ", 6, "เหมาะสมมาก", "ยอดเยี่ยม เป็นการลดขยะตั้งแต่ต้นทางและช่วยลดภาชนะใช้ครั้งเดียว"],
+          ["จัดจุดรวบรวมแก้วใช้แล้วเพื่อคัดแยก", 4, "เหมาะสมบางส่วน", "ช่วยให้คัดแยกได้ดีขึ้น แต่ยังไม่ลดปริมาณแก้วใช้ครั้งเดียวตั้งแต่ต้นทาง"],
+          ["เก็บแก้วไว้รวมกันโดยไม่ต้องแยก", 2, "มีแนวคิดถูกบางส่วน", "การรวบรวมช่วยให้พื้นที่สะอาดขึ้น แต่ควรเพิ่มการคัดแยกและลดการใช้"]
+        ]
+      },
+      {
+        title: "กล่องอาหารเปื้อนน้ำมัน",
+        description: "มีคนต้องการใส่กล่องกระดาษที่เปื้อนน้ำมันลงถังรีไซเคิล",
+        options: [
+          ["ใส่ลงถังรีไซเคิลทันที แม้มีคราบอาหาร", 0, "ไม่เหมาะสม", "คราบอาหารและน้ำมันอาจทำให้กระดาษรีไซเคิลได้ยาก หรือปนเปื้อนวัสดุอื่น"],
+          ["แยกส่วนที่สะอาดไปรีไซเคิล ส่วนที่เปื้อนมากจัดการเป็นขยะทั่วไป", 6, "เหมาะสมมาก", "ถูกต้อง ควรพิจารณาความสะอาดของวัสดุก่อนนำไปรีไซเคิล"],
+          ["เช็ดคราบอาหารออกเท่าที่ทำได้ก่อนทิ้ง", 4, "เหมาะสมบางส่วน", "เป็นแนวคิดที่ดี แต่ส่วนที่เปื้อนมากอาจยังรีไซเคิลไม่ได้"],
+          ["เก็บไว้โดยไม่จัดการ", 2, "มีแนวคิดถูกบางส่วน", "ยังไม่ช่วยแก้ปัญหา และอาจทำให้เกิดกลิ่นหรือแมลงรบกวน"]
+        ]
+      },
+      {
+        title: "ถังขยะไม่ชัดเจน",
+        description: "บริเวณโรงอาหารมีถังหลายใบ แต่ไม่มีป้ายบอกประเภทขยะ ทำให้นักเรียนทิ้งปะปนกัน",
+        options: [
+          ["เพิ่มป้ายภาพและตัวอย่างขยะบนถัง พร้อมจัดถังให้เห็นชัด", 6, "เหมาะสมมาก", "ถูกต้อง ป้ายที่เข้าใจง่ายช่วยให้ทุกคนแยกขยะได้ถูกต้องขึ้น"],
+          ["ให้แม่บ้านคัดแยกทีหลังเพียงอย่างเดียว", 4, "เหมาะสมบางส่วน", "ช่วยได้บางส่วน แต่ควรส่งเสริมให้แยกตั้งแต่ต้นทางร่วมด้วย"],
+          ["ให้เพื่อนคอยบอกกันเมื่อเห็นคนทิ้งผิด", 2, "มีแนวคิดถูกบางส่วน", "ช่วยได้ในระยะสั้น แต่ควรมีป้ายและระบบถังที่ชัดเจนด้วย"],
+          ["ลดจำนวนถังให้เหลือเพียงถังเดียว", 0, "ไม่เหมาะสม", "ยิ่งทำให้การคัดแยกตั้งแต่ต้นทางเกิดขึ้นได้ยาก"]
+        ]
+      }
+    ];
+
+    let state = {
+      unlocked: 1,
+      scores: { mission1: 0, mission2: 0, mission3: 0 },
+      mission1: {
+        index: 0,
+        rawScore: 0,
+        correct: 0,
+        selectedCategory: null,
+        selectedReason: null,
+        submitted: false,
+        reasonCorrect: 0
+      },
+      mission2: {
+        index: 0,
+        rawScore: 0,
+        selected: null,
+        submitted: false
+      },
+      mission3: {
+        selectedBin: null,
+        placements: {
+          cafeteria: [],
+          sports: [],
+          classroom: [],
+          rest: []
+        },
+        management: "",
+        reduction: "",
+        submitted: false
+      }
+    };
+
+    function refreshIcons() {
+      lucide.createIcons();
+    }
+
+    function saveProgress() {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          unlocked: state.unlocked,
+          scores: state.scores,
+          mission1Correct: state.mission1.correct,
+          reasonCorrect: state.mission1.reasonCorrect
+        })
+      );
+    }
+
+    function loadProgress() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+
+      try {
+        const data = JSON.parse(saved);
+        state.unlocked = data.unlocked || 1;
+        state.scores = data.scores || state.scores;
+        state.mission1.correct = data.mission1Correct || 0;
+        state.mission1.reasonCorrect = data.reasonCorrect || 0;
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll(".screen").forEach((screen) => {
+        screen.classList.remove("active");
+      });
+
+      document.getElementById(screenId).classList.add("active");
+
+      if (screenId === "mission-select-screen") renderMissionCards();
+      if (screenId === "mission1-screen") renderMission1();
+      if (screenId === "mission2-screen") renderMission2();
+      if (screenId === "mission3-screen") renderMission3();
+      if (screenId === "result-screen") renderResult();
+      if (screenId === "review-screen") renderReview();
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      refreshIcons();
+    }
+
+    function resetMission1() {
+      state.mission1 = {
+        index: 0,
+        rawScore: 0,
+        correct: 0,
+        selectedCategory: null,
+        selectedReason: null,
+        submitted: false,
+        reasonCorrect: 0
+      };
+    }
+
+    function resetMission2() {
+      state.mission2 = {
+        index: 0,
+        rawScore: 0,
+        selected: null,
+        submitted: false
+      };
+    }
+
+    function resetMission3() {
+      state.mission3 = {
+        selectedBin: null,
+        placements: {
+          cafeteria: [],
+          sports: [],
+          classroom: [],
+          rest: []
+        },
+        management: "",
+        reduction: "",
+        submitted: false
+      };
+    }
+
+    function startMission(number) {
+      if (number > state.unlocked) return;
+
+      if (number === 1) {
+        resetMission1();
+        showScreen("mission1-screen");
+      }
+
+      if (number === 2) {
+        resetMission2();
+        showScreen("mission2-screen");
+      }
+
+      if (number === 3) {
+        resetMission3();
+        showScreen("mission3-screen");
+      }
+    }
+
+    function renderMissionCards() {
+      const missions = [
+        ["01", "แยกให้ถูก", "เรียนรู้การจำแนกประเภทขยะ พร้อมอธิบายเหตุผลในการตัดสินใจ", "8–10 นาที", "recycle", "mission1", 50],
+        ["02", "นักแก้ปัญหา", "วิเคราะห์สถานการณ์เกี่ยวกับขยะในชีวิตประจำวัน", "6–8 นาที", "brain-circuit", "mission2", 30],
+        ["03", "ภารกิจโรงเรียน", "ออกแบบแนวทางจัดการขยะสำหรับกิจกรรมขนาดใหญ่", "8–10 นาที", "school", "mission3", 20]
+      ];
+
+      document.getElementById("mission-cards").innerHTML = missions.map((mission, index) => {
+        const number = index + 1;
+        const unlocked = state.unlocked >= number;
+        const completed = state.scores[mission[5]] > 0;
+
+        return `
+          <article class="rounded-3xl border p-6 shadow-sm ${unlocked ? "border-emerald-100 bg-white" : "border-slate-200 bg-slate-50 opacity-75"}">
+            <div class="flex items-start justify-between gap-4">
+              <div class="grid h-13 w-13 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
+                <i data-lucide="${mission[4]}" class="h-7 w-7"></i>
+              </div>
+              <span class="text-sm font-bold tracking-wider text-emerald-700">MISSION ${mission[0]}</span>
+            </div>
+
+            <h3 class="mt-6 text-xl font-bold text-slate-900">${mission[1]}</h3>
+            <p class="mt-2 min-h-12 leading-6 text-slate-600">${mission[2]}</p>
+
+            <div class="mt-5 flex items-center justify-between text-sm">
+              <span class="flex items-center gap-2 text-slate-500">
+                <i data-lucide="clock-3" class="h-4 w-4"></i>${mission[3]}
+              </span>
+              <span class="font-bold text-emerald-700">เต็ม ${mission[6]} คะแนน</span>
+            </div>
+
+            <button
+              ${unlocked ? "" : "disabled"}
+              onclick="startMission(${number})"
+              class="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 font-semibold transition ${
+                unlocked
+                  ? completed
+                    ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                  : "cursor-not-allowed bg-slate-200 text-slate-500"
+              }"
+            >
+              <i data-lucide="${unlocked ? "play" : "lock-keyhole"}" class="h-4 w-4"></i>
+              ${unlocked ? (completed ? `เล่นอีกครั้ง (${state.scores[mission[5]]}/${mission[6]})` : "เริ่มภารกิจ") : "ปลดล็อกเมื่อผ่านภารกิจก่อนหน้า"}
+            </button>
+          </article>
+        `;
+      }).join("");
+
+      refreshIcons();
+    }
+
+    // MISSION 1
+    function selectMission1Category(category) {
+      if (state.mission1.submitted) return;
+      state.mission1.selectedCategory = category;
+      renderMission1();
+    }
+
+    function selectMission1Reason(index) {
+      if (state.mission1.submitted) return;
+      state.mission1.selectedReason = index;
+      renderMission1();
+    }
+
+    function submitMission1() {
+      if (!state.mission1.selectedCategory || state.mission1.selectedReason === null) return;
+      state.mission1.submitted = true;
+      renderMission1();
+    }
+
+    function nextMission1() {
+      const mission = state.mission1;
+      const item = wasteItems[mission.index];
+      const isCategoryCorrect = mission.selectedCategory === item.category;
+      const isReasonCorrect = mission.selectedReason === item.bestReason;
+
+      if (isCategoryCorrect) {
+        mission.rawScore += 5;
+        mission.correct++;
+      }
+
+      if (isReasonCorrect) mission.reasonCorrect++;
+
+      if (mission.index === wasteItems.length - 1) {
+        state.scores.mission1 = mission.rawScore;
+        state.unlocked = Math.max(state.unlocked, 2);
+        saveProgress();
+        showScreen("mission-select-screen");
+        return;
+      }
+
+      mission.index++;
+      mission.selectedCategory = null;
+      mission.selectedReason = null;
+      mission.submitted = false;
+      renderMission1();
+    }
+
+    function renderMission1() {
+      const mission = state.mission1;
+      const item = wasteItems[mission.index];
+      const progress = ((mission.index + 1) / wasteItems.length) * 100;
+      const categoryCorrect = mission.selectedCategory === item.category;
+      const reasonCorrect = mission.selectedReason === item.bestReason;
+
+      document.getElementById("mission1-content").innerHTML = `
+        <div class="rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm sm:p-8">
+          <div class="flex items-center justify-between gap-4">
+            <p class="font-bold text-slate-800">ข้อ ${mission.index + 1} / 10</p>
+            <p class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-800">
+              คะแนน ${mission.rawScore} / 50
+            </p>
+          </div>
+
+          <div class="mt-4 h-3 overflow-hidden rounded-full bg-emerald-100">
+            <div class="h-full rounded-full bg-emerald-600 transition-all duration-500" style="width:${progress}%"></div>
+          </div>
+
+          ${
+            !mission.submitted
+              ? `
+                <div class="mt-8 rounded-3xl bg-emerald-50 p-6 text-center">
+                  <div class="text-6xl">${item.emoji}</div>
+                  <h2 class="mt-4 text-2xl font-bold text-slate-900">${item.name}</h2>
+                  <p class="mt-2 text-slate-600">ควรจัดเป็นขยะประเภทใด?</p>
+                </div>
+
+                <div class="mt-7 grid gap-3 sm:grid-cols-2">
+                  ${Object.entries(categories).map(([id, category]) => `
+                    <button onclick="selectMission1Category('${id}')" class="answer-button flex min-h-16 items-center justify-between gap-3 rounded-2xl border-2 border-slate-200 bg-white px-5 py-4 text-left font-medium transition hover:border-emerald-300 ${mission.selectedCategory === id ? "selected" : ""}">
+                      <span class="flex items-center gap-3">
+                        <span class="h-4 w-4 rounded-full ${category.color}"></span>
+                        ${category.label}
+                      </span>
+                      ${mission.selectedCategory === id ? '<i data-lucide="check-circle-2" class="h-5 w-5 text-emerald-600"></i>' : ""}
+                    </button>
+                  `).join("")}
+                </div>
+
+                <div class="mt-8 border-t border-slate-100 pt-7">
+                  <div class="flex items-center gap-2">
+                    <i data-lucide="lightbulb" class="h-5 w-5 text-amber-500"></i>
+                    <h3 class="font-bold text-slate-900">เลือกเหตุผลประกอบ</h3>
+                  </div>
+                  <p class="mt-1 text-sm text-slate-500">ส่วนนี้ใช้สะท้อนความเข้าใจ และไม่คิดคะแนน</p>
+
+                  <div class="mt-4 space-y-3">
+                    ${item.reasons.map((reason, index) => `
+                      <button onclick="selectMission1Reason(${index})" class="answer-button flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl border-2 border-slate-200 bg-white px-5 py-4 text-left font-medium transition hover:border-emerald-300 ${mission.selectedReason === index ? "selected" : ""}">
+                        <span>${reason}</span>
+                        ${mission.selectedReason === index ? '<i data-lucide="check-circle-2" class="h-5 w-5 text-emerald-600"></i>' : ""}
+                      </button>
+                    `).join("")}
+                  </div>
+                </div>
+
+                <button onclick="submitMission1()" ${(!mission.selectedCategory || mission.selectedReason === null) ? "disabled" : ""} class="mt-8 min-h-13 w-full rounded-2xl bg-emerald-600 px-5 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+                  ส่งคำตอบ
+                </button>
+              `
+              : `
+                <div class="mt-7 rounded-3xl border p-5 sm:p-6 ${categoryCorrect ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}">
+                  <div class="flex gap-3">
+                    <i data-lucide="${categoryCorrect ? "check-circle-2" : "circle-alert"}" class="mt-0.5 h-6 w-6 shrink-0 ${categoryCorrect ? "text-emerald-600" : "text-amber-600"}"></i>
+                    <div>
+                      <p class="font-bold text-slate-900">${categoryCorrect ? "✓ ถูกต้อง" : "ยังไม่ถูกต้อง"}</p>
+                      <p class="mt-2 leading-7 text-slate-700">${item.explanation}</p>
+                      <p class="mt-3 font-semibold text-slate-700">
+                        คะแนนจากการจำแนกประเภท: ${categoryCorrect ? "5" : "0"} / 5 คะแนน
+                      </p>
+                      <p class="mt-2 text-sm text-slate-600">
+                        เหตุผลประกอบ: ${reasonCorrect ? "สอดคล้องกับหลักการจัดการขยะ" : "ลองทบทวนหลักการของขยะประเภทนี้เพิ่มเติม"}
+                      </p>
+
+                      <button onclick="nextMission1()" class="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 font-semibold text-white transition hover:bg-emerald-700">
+                        ${mission.index === wasteItems.length - 1 ? "จบ Mission 1" : "ไปข้อต่อไป"}
+                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `
+          }
+        </div>
+      `;
+
+      refreshIcons();
+    }
+
+    // MISSION 2
+    function selectMission2(index) {
+      if (state.mission2.submitted) return;
+      state.mission2.selected = index;
+      renderMission2();
+    }
+
+    function submitMission2() {
+      if (state.mission2.selected === null) return;
+      state.mission2.submitted = true;
+      renderMission2();
+    }
+
+    function nextMission2() {
+      const mission = state.mission2;
+      const selectedOption = scenarios[mission.index].options[mission.selected];
+      mission.rawScore += selectedOption[1];
+
+      if (mission.index === scenarios.length - 1) {
+        state.scores.mission2 = mission.rawScore;
+        state.unlocked = Math.max(state.unlocked, 3);
+        saveProgress();
+        showScreen("mission-select-screen");
+        return;
+      }
+
+      mission.index++;
+      mission.selected = null;
+      mission.submitted = false;
+      renderMission2();
+    }
+
+    function renderMission2() {
+      const mission = state.mission2;
+      const scenario = scenarios[mission.index];
+      const progress = ((mission.index + 1) / scenarios.length) * 100;
+      const selected = mission.selected !== null ? scenario.options[mission.selected] : null;
+
+      document.getElementById("mission2-content").innerHTML = `
+        <div class="rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm sm:p-8">
+          <div class="flex items-center justify-between gap-4">
+            <p class="font-bold text-slate-800">สถานการณ์ ${mission.index + 1} / 5</p>
+            <p class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-800">
+              คะแนน ${mission.rawScore} / 30
+            </p>
+          </div>
+
+          <div class="mt-4 h-3 overflow-hidden rounded-full bg-emerald-100">
+            <div class="h-full rounded-full bg-emerald-600 transition-all duration-500" style="width:${progress}%"></div>
+          </div>
+
+          ${
+            !mission.submitted
+              ? `
+                <div class="mt-8 rounded-3xl bg-slate-50 p-6">
+                  <p class="text-sm font-bold uppercase tracking-wider text-emerald-700">${scenario.title}</p>
+                  <h2 class="mt-3 text-xl font-bold leading-8 text-slate-900">${scenario.description}</h2>
+                  <p class="mt-4 text-slate-600">คุณจะแก้ปัญหานี้อย่างไร?</p>
+                </div>
+
+                <div class="mt-6 space-y-3">
+                  ${scenario.options.map((option, index) => `
+                    <button onclick="selectMission2(${index})" class="answer-button flex min-h-16 w-full items-center justify-between gap-3 rounded-2xl border-2 border-slate-200 bg-white px-5 py-4 text-left font-medium text-slate-700 transition hover:border-emerald-300 ${mission.selected === index ? "selected" : ""}">
+                      <span><strong class="mr-2 text-emerald-700">${String.fromCharCode(65 + index)}.</strong>${option[0]}</span>
+                      ${mission.selected === index ? '<i data-lucide="check-circle-2" class="h-5 w-5 text-emerald-600"></i>' : ""}
+                    </button>
+                  `).join("")}
+                </div>
+
+                <button onclick="submitMission2()" ${mission.selected === null ? "disabled" : ""} class="mt-8 min-h-13 w-full rounded-2xl bg-emerald-600 px-5 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+                  ส่งคำตอบ
+                </button>
+              `
+              : `
+                <div class="mt-7 rounded-3xl border p-5 sm:p-6 ${selected[1] >= 4 ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}">
+                  <div class="flex gap-3">
+                    <i data-lucide="${selected[1] >= 4 ? "check-circle-2" : "circle-alert"}" class="mt-0.5 h-6 w-6 shrink-0 ${selected[1] >= 4 ? "text-emerald-600" : "text-amber-600"}"></i>
+                    <div>
+                      <p class="font-bold text-slate-900">${selected[2]}</p>
+                      <p class="mt-2 leading-7 text-slate-700">${selected[3]}</p>
+                      <p class="mt-3 font-semibold text-slate-700">คะแนนที่ได้รับ: ${selected[1]} / 6 คะแนน</p>
+
+                      <button onclick="nextMission2()" class="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 font-semibold text-white transition hover:bg-emerald-700">
+                        ${mission.index === scenarios.length - 1 ? "จบ Mission 2" : "ไปสถานการณ์ต่อไป"}
+                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              `
+          }
+        </div>
+      `;
+
+      refreshIcons();
+    }
+
+    // MISSION 3
+    function selectBin(binId) {
+      state.mission3.selectedBin = binId;
+      renderMission3();
+    }
+
+    function placeBin(zoneId, draggedBin = null) {
+      const binId = draggedBin || state.mission3.selectedBin;
+      if (!binId || state.mission3.submitted) return;
+
+      const zoneBins = state.mission3.placements[zoneId];
+
+      if (zoneBins.includes(binId)) {
+        state.mission3.placements[zoneId] = zoneBins.filter((bin) => bin !== binId);
+      } else {
+        state.mission3.placements[zoneId].push(binId);
+      }
+
+      renderMission3();
+    }
+
+    function removeBin(zoneId, binId) {
+      if (state.mission3.submitted) return;
+      state.mission3.placements[zoneId] = state.mission3.placements[zoneId].filter((bin) => bin !== binId);
+      renderMission3();
+    }
+
+    function setMission3Value(type, value) {
+      if (state.mission3.submitted) return;
+      state.mission3[type] = value;
+      renderMission3();
+    }
+
+    function dragStart(event, binId) {
+      event.dataTransfer.setData("text/plain", binId);
+    }
+
+    function dragOver(event) {
+      event.preventDefault();
+      event.currentTarget.classList.add("drag-over");
+    }
+
+    function dragLeave(event) {
+      event.currentTarget.classList.remove("drag-over");
+    }
+
+    function dropBin(event, zoneId) {
+      event.preventDefault();
+      event.currentTarget.classList.remove("drag-over");
+      const binId = event.dataTransfer.getData("text/plain");
+      placeBin(zoneId, binId);
+    }
+
+    function calculateMission3() {
+      const mission = state.mission3;
+      const placements = mission.placements;
+      const allBins = Object.values(placements).flat();
+
+      let binScore = 0;
+      let locationScore = 0;
+      let managementScore = 0;
+      let reductionScore = 0;
+
+      const hasAllBinTypes = ["general", "recyclable", "organic", "hazardous"].every((bin) => allBins.includes(bin));
+
+      if (hasAllBinTypes) binScore = 5;
+
+      const cafeteriaGood = placements.cafeteria.includes("organic") && placements.cafeteria.includes("recyclable");
+      const sportsGood = placements.sports.includes("general") || placements.sports.includes("recyclable");
+      const classroomGood = placements.classroom.includes("general") || placements.classroom.includes("hazardous");
+
+      if (cafeteriaGood && sportsGood && classroomGood) locationScore = 5;
+
+      if (mission.management === "separate") managementScore = 5;
+      if (mission.reduction === "reusable") reductionScore = 5;
+
+      return {
+        total: binScore + locationScore + managementScore + reductionScore,
+        binScore,
+        locationScore,
+        managementScore,
+        reductionScore,
+        feedback: [
+          binScore === 5
+            ? "เลือกประเภทถังขยะได้ครบทั้ง 4 ประเภท"
+            : "ควรจัดถังให้ครบทั้งขยะทั่วไป รีไซเคิล อินทรีย์ และอันตราย",
+          locationScore === 5
+            ? "วางถังในพื้นที่สำคัญได้เหมาะสมกับลักษณะขยะ"
+            : "ควรเน้นถังอินทรีย์และรีไซเคิลที่โรงอาหาร รวมถึงจัดถังในสนามกีฬาและอาคารเรียน",
+          managementScore === 5
+            ? "มีแนวทางคัดแยก รวบรวม และส่งต่อขยะอย่างเหมาะสม"
+            : "ควรเลือกแนวทางคัดแยก รวบรวม และส่งต่อขยะแต่ละประเภท",
+          reductionScore === 5
+            ? "มีแนวทางลดขยะตั้งแต่ต้นทางได้ดี"
+            : "ควรส่งเสริมภาชนะส่วนตัวและจุดเติมน้ำ เพื่อลดขยะใช้ครั้งเดียว"
+        ]
+      };
+    }
+
+    function submitMission3() {
+      const mission = state.mission3;
+
+      if (!Object.values(mission.placements).flat().length || !mission.management || !mission.reduction) {
+        alert("กรุณาวางถังขยะบนแผนผัง และเลือกแนวทางจัดการขยะให้ครบ");
+        return;
+      }
+
+      mission.submitted = true;
+      const result = calculateMission3();
+      state.scores.mission3 = result.total;
+      saveProgress();
+      renderMission3();
+    }
+
+    function mapBinHTML(binId, zoneId) {
+      const bin = categories[binId];
+
+      return `
+        <button onclick="removeBin('${zoneId}', '${binId}')" class="map-bin ${bin.color}" title="กดเพื่อนำถังออก">
+          <i data-lucide="${bin.icon}" class="h-3 w-3"></i>
+          ${bin.label}
+          <span class="ml-1 opacity-80">×</span>
+        </button>
+      `;
+    }
+
+    function zoneHTML(id, title, emoji, description) {
+      const bins = state.mission3.placements[id];
+
+      return `
+        <button
+          type="button"
+          onclick="placeBin('${id}')"
+          ondragover="dragOver(event)"
+          ondragleave="dragLeave(event)"
+          ondrop="dropBin(event, '${id}')"
+          class="map-zone w-full rounded-3xl border-2 border-dashed border-emerald-200 bg-white p-4 text-left hover:border-emerald-500 hover:bg-emerald-50"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-2xl">${emoji}</p>
+              <h4 class="mt-1 font-bold text-slate-900">${title}</h4>
+              <p class="mt-1 text-xs leading-5 text-slate-500">${description}</p>
+            </div>
+            <i data-lucide="map-pin" class="h-5 w-5 shrink-0 text-emerald-600"></i>
+          </div>
+
+          <div class="mt-3 min-h-8">
+            ${bins.length ? bins.map((bin) => mapBinHTML(bin, id)).join("") : '<span class="text-xs text-slate-400">แตะพื้นที่นี้เพื่อวางถัง</span>'}
+          </div>
+        </button>
+      `;
+    }
+
+    function radioOption(type, value, label, active) {
+      return `
+        <button onclick="setMission3Value('${type}', '${value}')" class="choice-card flex w-full items-start gap-3 rounded-2xl border-2 border-slate-200 p-4 text-left transition hover:border-emerald-300 ${active === value ? "selected" : ""}">
+          <span class="mt-1 h-4 w-4 shrink-0 rounded-full border-4 ${active === value ? "border-emerald-600 bg-white" : "border-slate-300"}"></span>
+          <span class="font-medium leading-6 text-slate-700">${label}</span>
+        </button>
+      `;
+    }
+
+    function renderMission3() {
+      const mission = state.mission3;
+
+      if (mission.submitted) {
+        const result = calculateMission3();
+
+        document.getElementById("mission3-content").innerHTML = `
+          <div class="rounded-3xl border ${result.total >= 15 ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"} p-6">
+            <div class="flex gap-3">
+              <i data-lucide="${result.total >= 15 ? "check-circle-2" : "circle-alert"}" class="mt-0.5 h-7 w-7 shrink-0 ${result.total >= 15 ? "text-emerald-600" : "text-amber-600"}"></i>
+              <div class="w-full">
+                <h2 class="text-2xl font-bold text-slate-900">ผลการประเมินแผนจัดการขยะ</h2>
+                <p class="mt-2 text-slate-700">คะแนน Mission 3: <strong>${result.total} / 20 คะแนน</strong></p>
+
+                <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                  ${[
+                    ["ประเภทถังขยะ", result.binScore],
+                    ["ตำแหน่งวางถัง", result.locationScore],
+                    ["แนวทางจัดการขยะ", result.managementScore],
+                    ["แนวทางลดขยะ", result.reductionScore]
+                  ].map(([label, score]) => `
+                    <div class="rounded-2xl bg-white/80 p-4">
+                      <p class="text-sm text-slate-600">${label}</p>
+                      <p class="mt-1 text-2xl font-extrabold text-emerald-700">${score} / 5</p>
+                    </div>
+                  `).join("")}
+                </div>
+
+                <ul class="mt-6 space-y-3 text-slate-700">
+                  ${result.feedback.map((item) => `
+                    <li class="flex gap-2">
+                      <i data-lucide="check-circle-2" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"></i>
+                      ${item}
+                    </li>
+                  `).join("")}
+                </ul>
+
+                <button onclick="showScreen('result-screen')" class="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-emerald-600 px-6 font-bold text-white transition hover:bg-emerald-700">
+                  ดูผลภารกิจทั้งหมด
+                  <i data-lucide="arrow-right" class="h-5 w-5"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        refreshIcons();
+        return;
+      }
+
+      document.getElementById("mission3-content").innerHTML = `
+        <div class="rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm sm:p-8">
+          <div class="rounded-3xl bg-emerald-50 p-6">
+            <p class="text-sm font-bold uppercase tracking-wider text-emerald-700">สถานการณ์หลัก</p>
+            <h2 class="mt-3 text-2xl font-bold leading-9 text-slate-900">
+              โรงเรียนกำลังจัดกิจกรรมขนาดใหญ่ และคาดว่าจะมีขยะจำนวนมาก
+            </h2>
+            <p class="mt-3 leading-7 text-slate-600">
+              ออกแบบแผนจัดการขยะ โดยเลือกถังขยะ วางถังในพื้นที่สำคัญ และกำหนดแนวทางดำเนินงาน
+            </p>
+          </div>
+
+          <section class="mt-8">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h3 class="font-bold text-slate-900">1. เลือกถังขยะ แล้ววางลงบนแผนผัง</h3>
+                <p class="mt-1 text-sm text-slate-500">บนคอมพิวเตอร์สามารถลากได้ · บนมือถือให้แตะเลือกถัง แล้วแตะพื้นที่</p>
+              </div>
+              <span class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-800">
+                คะแนนส่วนนี้ 5 คะแนน
+              </span>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              ${Object.entries(categories).map(([id, bin]) => `
+                <button
+                  draggable="true"
+                  ondragstart="dragStart(event, '${id}')"
+                  onclick="selectBin('${id}')"
+                  class="bin-palette flex min-h-14 items-center gap-3 rounded-2xl border-2 border-slate-200 bg-white px-4 text-left font-semibold transition hover:border-emerald-300 ${mission.selectedBin === id ? "selected" : ""}"
+                >
+                  <span class="grid h-8 w-8 place-items-center rounded-xl ${bin.color} text-white">
+                    <i data-lucide="${bin.icon}" class="h-4 w-4"></i>
+                  </span>
+                  <span>${bin.label}</span>
+                </button>
+              `).join("")}
+            </div>
+
+            <div class="mt-5 rounded-3xl border border-emerald-100 bg-[#f7faf7] p-4 sm:p-6">
+              <div class="mb-4 flex items-center justify-between">
+                <h4 class="font-bold text-slate-900">แผนผังโรงเรียน</h4>
+                <span class="text-sm text-slate-500">เลือกพื้นที่ที่มีการใช้งานมาก</span>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                ${zoneHTML("cafeteria", "โรงอาหาร", "🍽️", "มีเศษอาหาร ภาชนะ และขวดน้ำจำนวนมาก")}
+                ${zoneHTML("sports", "สนามกีฬา", "⚽", "มีขวดน้ำและบรรจุภัณฑ์จากกิจกรรม")}
+                ${zoneHTML("classroom", "อาคารเรียน", "🏫", "มีเศษกระดาษ อุปกรณ์การเรียน และถ่านใช้แล้ว")}
+                ${zoneHTML("rest", "จุดพักนักเรียน", "🪑", "มีขยะทั่วไปและบรรจุภัณฑ์ขนาดเล็ก")}
+              </div>
+            </div>
+          </section>
+
+          <section class="mt-8 border-t border-slate-100 pt-7">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="font-bold text-slate-900">2. แนวทางจัดการขยะหลังรวบรวม</h3>
+              <span class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-800">5 คะแนน</span>
+            </div>
+
+            <div class="mt-4 space-y-3">
+              ${radioOption("management", "separate", "คัดแยก รวบรวม และส่งต่อขยะแต่ละประเภทไปยังจุดจัดการที่เหมาะสม", mission.management)}
+              ${radioOption("management", "collect", "รวบรวมขยะทั้งหมดไว้จุดเดียว แล้วค่อยพิจารณาจัดการภายหลัง", mission.management)}
+              ${radioOption("management", "mix", "นำขยะทุกประเภทใส่ถุงรวมกันเพื่อความรวดเร็ว", mission.management)}
+            </div>
+          </section>
+
+          <section class="mt-8 border-t border-slate-100 pt-7">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="font-bold text-slate-900">3. วิธีลดปริมาณขยะตั้งแต่ต้นทาง</h3>
+              <span class="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-800">5 คะแนน</span>
+            </div>
+
+            <div class="mt-4 space-y-3">
+              ${radioOption("reduction", "reusable", "ส่งเสริมการใช้แก้วน้ำ กล่องอาหาร หรือภาชนะส่วนตัว และจัดจุดเติมน้ำ", mission.reduction)}
+              ${radioOption("reduction", "campaign", "ติดป้ายรณรงค์ให้ทุกคนช่วยกันลดขยะ", mission.reduction)}
+              ${radioOption("reduction", "single", "เพิ่มการแจกภาชนะใช้ครั้งเดียวเพื่อความสะดวก", mission.reduction)}
+            </div>
+          </section>
+
+          <button onclick="submitMission3()" class="mt-8 min-h-13 w-full rounded-2xl bg-emerald-600 px-5 font-bold text-white transition hover:bg-emerald-700">
+            ส่งแผนจัดการขยะ
+          </button>
+        </div>
+      `;
+
+      refreshIcons();
+    }
+
+    // RESULT & REVIEW
+    function getTotalScore() {
+      return state.scores.mission1 + state.scores.mission2 + state.scores.mission3;
+    }
+
+    function getLevel(score) {
+      if (score >= 90) return "🌱 นักพิทักษ์สิ่งแวดล้อมระดับต้นแบบ";
+      if (score >= 75) return "♻️ นักจัดการขยะมืออาชีพ";
+      if (score >= 60) return "🌿 ผู้ช่วยพิทักษ์สิ่งแวดล้อม";
+      return "🌱 นักเรียนรู้รักษ์สิ่งแวดล้อม";
+    }
+
+    function renderResult() {
+      const total = getTotalScore();
+
+      const strengths = [];
+      const improvements = [];
+
+      if (state.scores.mission1 >= 40) strengths.push("จำแนกประเภทขยะได้ดี");
+      else improvements.push("การจำแนกขยะรีไซเคิล ขยะทั่วไป และขยะอันตราย");
+
+      if (state.scores.mission2 >= 24) strengths.push("วิเคราะห์สถานการณ์เกี่ยวกับขยะได้ดี");
+      else improvements.push("การวิเคราะห์แนวทางแก้ปัญหาขยะในชีวิตประจำวัน");
+
+      if (state.scores.mission3 >= 15) strengths.push("ออกแบบระบบจัดการขยะในโรงเรียนได้ดี");
+      else improvements.push("การวางถังขยะและการลดขยะตั้งแต่ต้นทาง");
+
+      document.getElementById("result-content").innerHTML = `
+        <div class="rounded-3xl border border-emerald-100 bg-white p-6 text-center shadow-sm sm:p-10">
+          <div class="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-emerald-100 text-emerald-700">
+            <i data-lucide="award" class="h-8 w-8"></i>
+          </div>
+
+          <p class="mt-5 text-sm font-bold uppercase tracking-widest text-emerald-700">Smart Waste Challenge</p>
+          <h2 class="mt-2 text-3xl font-extrabold text-slate-900">ภารกิจสำเร็จ!</h2>
+
+          <p class="mt-7 text-sm text-slate-500">คะแนนรวม</p>
+          <p class="text-5xl font-extrabold text-emerald-600">
+            ${total}<span class="text-2xl text-slate-400"> / 100</span>
+          </p>
+
+          <div class="mx-auto mt-6 h-3 max-w-md overflow-hidden rounded-full bg-emerald-100">
+            <div class="h-full rounded-full bg-emerald-600 transition-all duration-500" style="width:${total}%"></div>
+          </div>
+
+          <p class="mt-6 text-lg font-bold text-slate-800">${getLevel(total)}</p>
+        </div>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-3">
+          ${scoreBox("Mission 1", "แยกให้ถูก", state.scores.mission1, 50)}
+          ${scoreBox("Mission 2", "นักแก้ปัญหา", state.scores.mission2, 30)}
+          ${scoreBox("Mission 3", "ภารกิจโรงเรียน", state.scores.mission3, 20)}
+        </div>
+
+        <div class="mt-5 grid gap-5 md:grid-cols-2">
+          <section class="rounded-3xl border border-emerald-100 bg-white p-6">
+            <h3 class="font-bold text-slate-900">สิ่งที่ทำได้ดี</h3>
+            <ul class="mt-4 space-y-3 text-slate-700">
+              ${(strengths.length ? strengths : ["คุณเริ่มเข้าใจหลักการจัดการขยะอย่างเป็นระบบ"]).map((item) => `
+                <li class="flex gap-2">
+                  <i data-lucide="check-circle-2" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"></i>
+                  ${item}
+                </li>
+              `).join("")}
+            </ul>
+          </section>
+
+          <section class="rounded-3xl border border-amber-100 bg-amber-50 p-6">
+            <h3 class="font-bold text-slate-900">สิ่งที่ควรเรียนรู้เพิ่ม</h3>
+            <ul class="mt-4 space-y-3 text-slate-700">
+              ${(improvements.length ? improvements : ["ลองทบทวนและนำความรู้ไปใช้ต่อในชีวิตประจำวัน"]).map((item) => `
+                <li class="flex gap-2">
+                  <span class="font-bold text-amber-600">•</span>
+                  ${item}
+                </li>
+              `).join("")}
+            </ul>
+          </section>
+        </div>
+
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+          <button onclick="showScreen('review-screen')" class="min-h-13 flex-1 rounded-2xl bg-emerald-600 px-5 font-bold text-white transition hover:bg-emerald-700">
+            ดูสรุปการเรียนรู้
+          </button>
+          <button onclick="resetGame()" class="inline-flex min-h-13 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 font-bold text-slate-700 transition hover:bg-slate-50">
+            <i data-lucide="rotate-ccw" class="h-5 w-5"></i>
+            เริ่มใหม่
+          </button>
+        </div>
+      `;
+
+      refreshIcons();
+    }
+
+    function scoreBox(label, title, score, max) {
+      return `
+        <article class="rounded-3xl border border-emerald-100 bg-white p-5">
+          <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">${label}</p>
+          <h3 class="mt-2 font-bold text-slate-900">${title}</h3>
+          <p class="mt-4 text-3xl font-extrabold text-emerald-600">
+            ${score}<span class="text-base text-slate-400"> / ${max}</span>
+          </p>
+        </article>
+      `;
+    }
+
+    function renderReview() {
+      const total = getTotalScore();
+      const incorrect = 10 - state.mission1.correct;
+
+      document.getElementById("review-content").innerHTML = `
+        <div class="grid gap-4 sm:grid-cols-3">
+          ${scoreBox("Mission 1", "แยกให้ถูก", state.scores.mission1, 50)}
+          ${scoreBox("Mission 2", "นักแก้ปัญหา", state.scores.mission2, 30)}
+          ${scoreBox("Mission 3", "ภารกิจโรงเรียน", state.scores.mission3, 20)}
+        </div>
+
+        <section class="mt-6 rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8">
+          <h2 class="text-2xl font-bold text-slate-900">ภาพรวมผลการทำภารกิจ</h2>
+
+          <div class="mt-6 grid gap-4 sm:grid-cols-3">
+            ${statBox("คะแนนรวม", `${total} / 100`)}
+            ${statBox("จำแนกขยะถูก", `${state.mission1.correct} / 10 ข้อ`)}
+            ${statBox("เหตุผลประกอบเหมาะสม", `${state.mission1.reasonCorrect} / 10 ข้อ`)}
+          </div>
+
+          <p class="mt-5 text-sm leading-6 text-slate-500">
+            หมายเหตุ: คะแนน Mission 1 คิดจากการเลือกประเภทขยะถูกต้องเท่านั้น ส่วนเหตุผลประกอบใช้สะท้อนความเข้าใจเชิงหลักการ
+          </p>
+        </section>
+
+        <section class="mt-6 rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8">
+          <h2 class="text-2xl font-bold text-slate-900">สิ่งที่คุณได้เรียนรู้</h2>
+
+          <ul class="mt-6 space-y-4 text-slate-700">
+            ${[
+              "ขยะแต่ละประเภทมีวิธีจัดการที่แตกต่างกัน",
+              "การคัดแยกตั้งแต่ต้นทางช่วยให้ขยะรีไซเคิลและขยะอินทรีย์นำไปใช้ประโยชน์ได้",
+              "ขยะอันตราย เช่น ถ่านไฟฉาย หลอดไฟ และกระป๋องสเปรย์ ต้องแยกจัดการอย่างระมัดระวัง",
+              "การลดขยะตั้งแต่ต้นทาง เช่น การใช้ภาชนะส่วนตัว ช่วยลดปัญหาขยะได้อย่างยั่งยืน"
+            ].map((item) => `
+              <li class="flex gap-3 leading-7">
+                <i data-lucide="check-circle-2" class="mt-1 h-5 w-5 shrink-0 text-emerald-600"></i>
+                ${item}
+              </li>
+            `).join("")}
+          </ul>
+        </section>
+
+        <button onclick="showScreen('home-screen')" class="mt-6 inline-flex min-h-13 items-center gap-2 rounded-2xl bg-emerald-600 px-6 font-bold text-white transition hover:bg-emerald-700">
+          <i data-lucide="home" class="h-5 w-5"></i>
+          กลับหน้าหลัก
+        </button>
+      `;
+
+      refreshIcons();
+    }
+
+    function statBox(label, value) {
+      return `
+        <div class="rounded-2xl bg-emerald-50 p-4">
+          <p class="text-sm text-slate-600">${label}</p>
+          <p class="mt-1 text-xl font-bold text-emerald-800">${value}</p>
+        </div>
+      `;
+    }
+
+    function resetGame() {
+      localStorage.removeItem(STORAGE_KEY);
+
+      state = {
+        unlocked: 1,
+        scores: { mission1: 0, mission2: 0, mission3: 0 },
+        mission1: {
+          index: 0,
+          rawScore: 0,
+          correct: 0,
+          selectedCategory: null,
+          selectedReason: null,
+          submitted: false,
+          reasonCorrect: 0
+        },
+        mission2: {
+          index: 0,
+          rawScore: 0,
+          selected: null,
+          submitted: false
+        },
+        mission3: {
+          selectedBin: null,
+          placements: {
+            cafeteria: [],
+            sports: [],
+            classroom: [],
+            rest: []
+          },
+          management: "",
+          reduction: "",
+          submitted: false
+        }
+      };
+
+      showScreen("home-screen");
+    }
+
+    loadProgress();
+    refreshIcons();
+  </script>
+</body>
+</html>
