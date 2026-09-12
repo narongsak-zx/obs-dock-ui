@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <!-- ป้องกันการซูมและตั้งค่าให้แสดงผลเหมือนแอปพลิเคชันบนมือถือ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>DIGITAL SAFETY QUEST</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --primary: #1C1D21;
+      --secondary: #A68A56;
+      --success: #356847;
+      --warning: #B38234;
+      --danger: #9B3434;
+      --bg: #F7F7F8;
+      --surface: #FFFFFF;
+      --text: #2C2C2E;
+      --muted: #85858A;
+      --line: #E5E5EA;
+      --radius: 12px; /* โค้งมนแบบแอปยุคใหม่ */
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--bg);
+      font-family: "Prompt", sans-serif;
+      font-weight: 300;
+      line-height: 1.6;
+      /* รองรับ Safe area ของ iOS */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    button, input { font: inherit; outline: none; }
+    button { cursor: pointer; user-select: none; }
+    
+    .app { max-width: 1080px; margin: auto; padding: 20px 24px; }
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+    .score-pill { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; background:var(--bg); font-size:12px; color:var(--muted); }
+    .skill-row { margin:16px 0; text-align:left; }
+    .skill-head { display:flex; justify-content:space-between; gap:12px; font-size:14px; font-weight:500; }
+    .profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:24px; }
+    .profile-stat { padding:18px; border:1px solid var(--line); border-radius:10px; background:var(--bg); text-align:left; }
+    .profile-stat b { display:block; font-size:22px; font-weight:500; color:var(--primary); }
+    .profile-stat span { color:var(--muted); font-size:12px; }
+    .answer-review { margin-top:20px; padding:18px; border:1px solid var(--line); border-radius:10px; background:var(--bg); text-align:left; }
+    .answer-review strong { font-weight:500; }
+    @media (max-width: 600px) { .profile-grid { grid-template-columns:1fr; } }
+
+    /* ไอค่อนพื้นฐาน */
+    .icon { width: 24px; height: 24px; stroke-width: 1.5; }
+    .icon-sm { width: 16px; height: 16px; stroke-width: 2; }
+    .icon-lg { width: 36px; height: 36px; stroke-width: 1.5; }
+    .icon-xl { width: 48px; height: 48px; stroke-width: 1.5; }
+
+    /* Topbar */
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; padding: 10px 0 24px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: 0.5px; font-size: 15px; color: var(--primary); }
+    .brand-mark {
+      width: 38px; height: 38px; display: grid; place-items: center;
+      border-radius: 8px; background: var(--primary); color: var(--surface);
+    }
+    .nav-actions { display: flex; align-items: center; gap: 8px; }
+    .player-chip {
+      display: flex; gap: 6px; align-items: center; padding: 8px 16px;
+      color: var(--primary); font-size: 13px; font-weight: 500;
+      border: 1px solid var(--line); border-radius: 24px; background: var(--surface);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: 0; border-radius: 8px; padding: 14px 24px; min-height: 48px; /* Touch target size */
+      font-weight: 500; transition: all .2s ease; width: fit-content;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .btn-secondary { background: var(--surface); border: 1px solid var(--primary); color: var(--primary); }
+    .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+    .btn.small { padding: 8px 16px; min-height: 40px; font-size: 13px; }
+    
+    .btn-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+
+    /* Animations */
+    .page { animation: fade .3s ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Hero */
+    .hero {
+      min-height: 60vh; display: grid; grid-template-columns: 1.1fr .9fr;
+      align-items: center; gap: 40px; padding: 20px 0 40px;
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 6px; color: var(--secondary);
+      padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      background: rgba(166, 138, 86, 0.1); text-transform: uppercase; margin-bottom: 16px;
+    }
+    h1 { font-size: clamp(32px, 5vw, 56px); line-height: 1.2; margin: 0 0 16px; font-weight: 500; letter-spacing: -0.5px; }
+    h1 span { display: block; color: var(--secondary); font-weight: 600; }
+    .hero h2 { margin: 0; font-size: clamp(16px, 2vw, 20px); line-height: 1.5; font-weight: 400; color: var(--muted); }
+    .lead { color: var(--text); line-height: 1.7; font-size: 15px; margin-top: 16px; }
+    
+    /* Stats */
+    .stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+    .stat b { display: block; font-size: 20px; font-weight: 600; color: var(--primary); }
+    .stat span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Visual Element */
+    .shield-visual { min-height: 350px; display: grid; place-items: center; position: relative; }
+    .shield {
+      width: 160px; height: 160px; display: grid; place-items: center;
+      border-radius: 50%; background: var(--surface); border: 1px solid var(--line);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.05); color: var(--primary);
+      animation: float 4s ease-in-out infinite;
+    }
+    @keyframes float { 50% { transform: translateY(-10px); } }
+    .floating {
+      position: absolute; padding: 12px 16px; border: 1px solid var(--line);
+      border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px; font-weight: 500;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 8px;
+    }
+    .f1 { top: 10%; left: 0; } .f2 { right: 0; top: 40%; } .f3 { bottom: 10%; left: 10%; }
+
+    /* Panels & Inputs */
+    .panel {
+      max-width: 500px; margin: 6vh auto; padding: 32px; border: 1px solid var(--line);
+      border-radius: var(--radius); background: var(--surface); box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    }
+    .panel h2 { margin-top: 8px; font-weight: 500; font-size: 24px; }
+    .input {
+      width: 100%; margin: 16px 0; padding: 16px; color: var(--text); font-size: 16px; /* 16px ป้องกันซูมใน iOS */
+      border: 1px solid var(--line); border-radius: 8px; background: var(--bg); transition: all 0.2s;
+    }
+    .input:focus { border-color: var(--secondary); background: var(--surface); box-shadow: 0 0 0 3px rgba(166, 138, 86, 0.15); }
+
+    /* Progress & Grid */
+    .section-title { display: flex; justify-content: space-between; align-items: flex-end; margin: 10px 0 24px; }
+    .section-title h2 { margin: 8px 0 0; font-size: 24px; font-weight: 500; }
+    .quest-progress { padding: 20px; margin-bottom: 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+    .progress-head { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--primary); letter-spacing: 0.5px; }
+    .progress { height: 6px; overflow: hidden; margin-top: 12px; border-radius: 3px; background: var(--line); }
+    .progress > i { display: block; height: 100%; border-radius: inherit; transition: width .6s ease; background: var(--secondary); }
+
+    .mission-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .mission-card {
+      position: relative; min-height: 180px; padding: 24px; text-align: left;
+      border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+      transition: all .2s ease; display: flex; flex-direction: column; justify-content: center;
+    }
+    .mission-card.available:active { transform: scale(0.98); }
+    .mission-card.locked { opacity: .5; background: var(--bg); pointer-events: none; }
+    .mission-card .icon-container { color: var(--secondary); margin-bottom: 16px; }
+    .mission-card h3 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: 1px; color: var(--secondary); }
+    .mission-card strong { display: block; font-size: 18px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
+    .mission-card p { margin: 0; color: var(--muted); font-size: 13px; }
+    .mission-status {
+      position: absolute; right: 16px; top: 16px; padding: 4px 8px; border-radius: 4px;
+      font-size: 10px; font-weight: 600; border: 1px solid var(--line);
+      background: var(--bg); color: var(--muted); text-transform: uppercase;
+    }
+    .mission-card.completed .mission-status { color: var(--success); border-color: rgba(53, 104, 71, 0.3); background: rgba(53, 104, 71, 0.05); }
+
+    /* Play UI */
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+      margin-bottom: 20px;
+    }
+    .mission-label { color: var(--secondary); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .game-header h2 { margin: 4px 0 8px; font-size: 18px; font-weight: 500; }
+    .safety-box { text-align: right; }
+    .safety-box b { display: block; font-size: 20px; color: var(--primary); font-weight: 600; }
+    .safety-box span { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
+    .scenario-card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .scenario-card h3 { margin: 8px 0 20px; font-size: 20px; font-weight: 500; }
+    
+    /* Mock UI Components */
+    .mock-ui { max-width: 100%; margin: 0 auto 24px; padding: 16px; border-radius: 8px; background: #F2F2F7; border: 1px solid var(--line); }
+    .mock-top { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #E5E5EA; color: var(--muted); font-size: 12px; font-weight: 500; }
+    .bubble { padding: 14px 16px; max-width: 90%; line-height: 1.5; white-space: pre-line; border-radius: 16px 16px 16px 4px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 2px 4px rgba(0,0,0,0.02); font-size: 14px; }
+    .post { padding: 16px; border-radius: 8px; background: var(--surface); line-height: 1.5; white-space: pre-line; border: 1px solid var(--line); font-size: 14px; }
+    .email { padding: 16px; border-left: 3px solid var(--secondary); line-height: 1.5; white-space: pre-line; background: var(--surface); border-radius: 0 8px 8px 0; border: 1px solid var(--line); font-size: 14px; }
+    
+    /* Options */
+    .options { display: grid; gap: 12px; }
+    .option {
+      display: flex; align-items: flex-start; gap: 14px; width: 100%; padding: 16px; text-align: left;
+      color: var(--text); border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+      min-height: 64px; /* แตะง่ายบนมือถือ */
+    }
+    .option:active { background: var(--bg); transform: scale(0.98); }
+    .option-key {
+      min-width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px;
+      color: var(--surface); background: var(--primary); font-size: 12px; font-weight: 600; flex-shrink: 0;
+    }
+
+    /* Feedback */
+    .feedback { margin-top: 20px; padding: 24px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+    .feedback.good { border-top: 4px solid var(--success); }
+    .feedback.warn { border-top: 4px solid var(--warning); }
+    .feedback.bad { border-top: 4px solid var(--danger); }
+    .feedback h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-weight: 500; font-size: 20px; }
+    .score-gain { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 12px; }
+    .note { padding: 16px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); margin-top: 16px; }
+    .note b { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--primary); font-size: 13px; font-weight: 600; }
+    .note p { margin: 0; color: var(--text); font-size: 14px; line-height: 1.5; }
+
+    /* Results */
+    .result-card { max-width: 600px; margin: 4vh auto; padding: 40px 24px; text-align: center; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+    .result-icon { color: var(--secondary); margin-bottom: 16px; display: flex; justify-content: center; }
+    .result-card h1 { font-size: clamp(28px, 5vw, 36px); margin: 12px 0; font-weight: 500; }
+    .score-total { margin: 20px auto; font-size: 48px; font-weight: 300; color: var(--primary); }
+    .insight { padding: 16px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); margin-top: 12px; text-align: left; }
+    .insight b { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 14px; color: var(--primary); }
+    
+    .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+    .badge {
+      display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px;
+      padding: 24px 16px; text-align: center; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+    }
+    .badge b { font-size: 13px; font-weight: 500; line-height: 1.3; }
+    .badge small { color: var(--muted); font-size: 11px; }
+    .badge.locked { opacity: .4; background: var(--bg); }
+    .badge.unlocked { border-color: var(--secondary); background: #faf8f5; }
+
+    .toast {
+      position: fixed; z-index: 50; left: 50%; bottom: max(32px, env(safe-area-inset-bottom)); 
+      transform: translateX(-50%);
+      padding: 14px 24px; border-radius: 24px; color: white; background: var(--primary);
+      font-size: 14px; font-weight: 500; box-shadow: 0 10px 25px rgba(0,0,0,.15);
+      animation: toast .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 8px;
+      width: max-content; max-width: 90vw;
+    }
+    @keyframes toast { from { opacity: 0; transform: translate(-50%, 20px) scale(0.9); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+
+    /* App-like Responsive Adjustments */
+    @media (max-width: 768px) {
+      .app { padding: 16px; }
+      .topbar { flex-direction: column; align-items: stretch; gap: 16px; padding-bottom: 16px; }
+      .nav-actions { justify-content: space-between; }
+      .hero { grid-template-columns: 1fr; padding-top: 0; gap: 24px; text-align: center; }
+      .shield-visual { min-height: 240px; order: -1; }
+      .floating { font-size: 11px; padding: 8px 12px; }
+      .f1 { top: 0; } .f2 { right: 0; top: 30%; } .f3 { bottom: 0; left: 10%; }
+      .hero-actions { justify-content: center; }
+      .stats { justify-content: center; text-align: center; }
+      .mission-grid { grid-template-columns: 1fr; }
+      .game-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .safety-box { text-align: left; width: 100%; border-top: 1px solid var(--line); padding-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+      .btn { width: 100%; } /* ปุ่มกว้างเต็มจอบนมือถือ */
+      .btn-group { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><i data-lucide="shield-check" class="icon-sm"></i></div> 
+        DIGITAL SAFETY
+      </div>
+      <div class="nav-actions">
+        <div class="player-chip" id="playerChip"><i data-lucide="user" class="icon-sm"></i> ผู้เล่นใหม่</div>
+        <button class="btn btn-secondary small hidden" id="badgeNav" onclick="showBadges()"><i data-lucide="award" class="icon-sm"></i></button>
+        <button class="btn btn-danger small hidden" id="resetNav" onclick="resetGame()"><i data-lucide="rotate-ccw" class="icon-sm"></i></button>
+      </div>
+    </header>
+    <div id="screen"></div>
+  </main>
+
+  <script>
+    // ข้อมูลภารกิจ เปลี่ยน Icon จาก Emoji เป็นชื่อ Lucide Icons
+    const missions = [
+      {
+        id: 1, icon: "message-square-warning", title: "SCAM MESSAGE", subtitle: "อย่าหลงกลข้อความ",
+        badge: "SCAM DETECTOR", badgeIcon: "message-square-warning",
+        scenarios: [
+          {
+            title: "รางวัลที่มาแบบเร่งด่วน", type: "sms", icon: "message-circle",
+            mock: "ยินดีด้วย!\nคุณได้รับเงินรางวัล 10,000 บาท\nกรุณากดยืนยันสิทธิ์ภายใน 10 นาที\n\n[ คลิกลิงก์เพื่อรับรางวัล ]",
+            question: "คุณจะทำอย่างไร?",
+            options: [
+              ["กดลิงก์ทันทีเพื่อไม่ให้เสียสิทธิ์", 0],
+              ["ส่งต่อให้เพื่อนเพื่อช่วยกันกด", 1],
+              ["ตรวจสอบแหล่งที่มาและกิจกรรมก่อน", 10],
+              ["ตอบกลับไปส่งข้อมูลส่วนตัวเพื่อยืนยัน", 0]
+            ],
+            remember: "หยุด → ตรวจสอบ → ค่อยตัดสินใจ",
+            clues: "ข้อความเร่งรีบ, รางวัลที่ไม่เคยสมัคร, ลิงก์ไม่ชัดเจน"
+          },
+          {
+            title: "สายจากธนาคาร?", type: "sms", icon: "phone-incoming",
+            mock: "ธนาคาร: ตรวจพบธุรกรรมผิดปกติ\nกรุณาแจ้งรหัส OTP 6 หลักแก่เจ้าหน้าที่ทันที\nเพื่อระงับรายการของคุณ",
+            question: "วิธีตอบสนองที่ปลอดภัยที่สุดคือข้อใด?",
+            options: [
+              ["แจ้ง OTP เพราะผู้โทรบอกว่าเป็นเจ้าหน้าที่", 0],
+              ["ไม่เปิดเผย OTP และติดต่อธนาคารผ่านช่องทางทางการ", 10],
+              ["บอก OTP เฉพาะ 3 ตัวแรก", 1],
+              ["ส่งภาพหน้าจอ SMS ให้ผู้โทร", 4]
+            ],
+            remember: "OTP คือรหัสยืนยันธุรกรรม ห้ามบอกใคร แม้ผู้อ้างเป็นธนาคาร",
+            clues: "ธนาคารไม่ขอ OTP, มีการสร้างความกลัว, ติดต่อผ่านเบอร์หรือแอปทางการ"
+          },
+          {
+            title: "บัญชีจะถูกระงับใน 5 นาที", type: "sms", icon: "alert-circle",
+            mock: "แจ้งเตือนด่วน: บัญชีของคุณจะถูกระงับภายใน 5 นาที!\nยืนยันตัวตนที่ bit.ly/account-safe-now",
+            question: "คุณควรทำอย่างไรต่อ?",
+            options: [
+              ["รีบกดลิงก์เพราะเหลือเวลาเพียง 5 นาที", 0],
+              ["เข้าผ่านแอปหรือเว็บไซต์ทางการด้วยตนเองเพื่อตรวจสอบ", 10],
+              ["ส่งข้อความนี้ไปถามกลุ่มเพื่อนก่อน", 7],
+              ["กรอกข้อมูลเฉพาะชื่อเพื่อทดลอง", 1]
+            ],
+            remember: "อย่าปล่อยให้ความเร่งด่วนบังคับการตัดสินใจของเรา",
+            clues: "เวลาจำกัดผิดปกติ, ลิงก์ย่อ, ข้อความขู่ให้กลัว"
+          }
+        ]
+      },
+      {
+        id: 2, icon: "lock-keyhole", title: "PASSWORD MASTER", subtitle: "สร้างเกราะป้องกันบัญชี",
+        badge: "PASSWORD GUARDIAN", badgeIcon: "key-round",
+        scenarios: [
+          {
+            title: "เลือกรหัสผ่านที่แข็งแรง", type: "password", icon: "asterisk",
+            mock: "กำลังสร้างบัญชีเรียนออนไลน์\nรหัสผ่านต้องมีความยาวและเดายาก",
+            question: "รหัสผ่านใดปลอดภัยที่สุด?",
+            options: [
+              ["กรณ์123456", 0],
+              ["password2026", 1],
+              ["Mango!River_82Sky", 10],
+              ["12345678", 0]
+            ],
+            remember: "ใช้วลีรหัสผ่านที่ยาว มีตัวพิมพ์เล็ก-ใหญ่ ตัวเลข และสัญลักษณ์",
+            clues: "อย่าใช้ชื่อหรือข้อมูลเดาง่าย, ความยาวช่วยเพิ่มความปลอดภัย"
+          },
+          {
+            title: "รหัสผ่านเดียวทุกเว็บไซต์", type: "password", icon: "copy-x",
+            mock: "เพื่อนบอกว่าใช้รหัสผ่านเดียวกันกับเกม อีเมล และบัญชีธนาคาร เพราะจำง่าย",
+            question: "ความเสี่ยงสำคัญคืออะไร?",
+            options: [
+              ["ไม่มีความเสี่ยงหากรหัสผ่านยาว", 1],
+              ["หากเว็บหนึ่งรั่ว บัญชีอื่นอาจถูกเข้าถึงด้วย", 10],
+              ["แค่ทำให้เข้าสู่ระบบช้าลง", 4],
+              ["มีผลเฉพาะบัญชีเกมเท่านั้น", 0]
+            ],
+            remember: "หนึ่งบัญชี หนึ่งรหัสผ่าน เพื่อจำกัดความเสียหายเมื่อข้อมูลรั่วไหล",
+            clues: "การนำรหัสผ่านไปลองกับหลายเว็บไซต์เรียกว่า credential stuffing"
+          },
+          {
+            title: "ด่านป้องกันเพิ่ม", type: "password", icon: "smartphone",
+            mock: "เว็บไซต์แจ้งเตือน: “เปิดใช้การยืนยันตัวตนสองขั้นตอน (2FA) เพื่อเพิ่มความปลอดภัย”",
+            question: "คุณควรเลือกอะไร?",
+            options: [
+              ["เปิดใช้ 2FA และเก็บรหัสสำรองไว้ในที่ปลอดภัย", 10],
+              ["ไม่เปิด เพราะรหัสผ่านอย่างเดียวพอแล้ว", 4],
+              ["ส่งรหัสสำรองให้เพื่อนเก็บ", 1],
+              ["ปิดการแจ้งเตือนความปลอดภัยทั้งหมด", 0]
+            ],
+            remember: "2FA ช่วยเพิ่มอีกหนึ่งชั้น แม้รหัสผ่านจะรั่วไหล",
+            clues: "เลือกแอปยืนยันตัวตนได้เมื่อมีให้ใช้ และอย่าแชร์รหัสสำรอง"
+          }
+        ]
+      },
+      {
+        id: 3, icon: "newspaper", title: "FAKE NEWS", subtitle: "นักสืบข่าวปลอม",
+        badge: "FACT CHECKER", badgeIcon: "file-search",
+        scenarios: [
+          {
+            title: "แชร์แล้วได้เงิน", type: "post", icon: "share-2",
+            mock: "โพสต์ไวรัล\n“รัฐบาลแจกเงิน 5,000 บาทให้ทุกคน!\nแชร์โพสต์นี้ 10 กลุ่ม แล้วกดลิงก์ลงทะเบียนด่วน”",
+            question: "ก่อนแชร์หรือกดลิงก์ คุณควรทำอะไร?",
+            options: [
+              ["แชร์ทันทีเพื่อไม่พลาดสิทธิ์", 0],
+              ["ตรวจสอบประกาศจากหน่วยงานทางการและแหล่งข่าวน่าเชื่อถือ", 10],
+              ["กดลิงก์แต่ไม่กรอกข้อมูล", 4],
+              ["เชื่อเพราะมีคนแชร์จำนวนมาก", 1]
+            ],
+            remember: "ยอดแชร์ไม่ใช่หลักฐานว่าข้อมูลนั้นจริง",
+            clues: "อ้างผลประโยชน์, บังคับแชร์, ไม่มีแหล่งประกาศที่ตรวจสอบได้"
+          },
+          {
+            title: "บทความไร้ที่มา", type: "post", icon: "help-circle",
+            mock: "หัวข้อข่าว: “งานวิจัยยืนยัน! วิธีนี้ทำให้สอบได้คะแนนเต็มทุกวิชา”\nผู้เขียน: ไม่ระบุ\nแหล่งอ้างอิง: ไม่มี",
+            question: "สิ่งใดเป็นสัญญาณที่ควรระวังมากที่สุด?",
+            options: [
+              ["บทความใช้ตัวอักษรขนาดใหญ่", 4],
+              ["ไม่มีผู้เขียน แหล่งอ้างอิง หรือหลักฐานตรวจสอบได้", 10],
+              ["ข่าวมีรูปประกอบ", 1],
+              ["มีคนกดถูกใจหลายคน", 1]
+            ],
+            remember: "ถามเสมอว่าใครเป็นผู้เผยแพร่ และอ้างอิงหลักฐานจากที่ใด",
+            clues: "ตรวจผู้เขียน, วันที่เผยแพร่, แหล่งอ้างอิง และชื่อเว็บไซต์"
+          },
+          {
+            title: "ข้อมูลจากสองแหล่งไม่ตรงกัน", type: "post", icon: "git-compare",
+            mock: "เว็บไซต์ A รายงานข้อมูลหนึ่งแบบ\nเว็บไซต์ B รายงานข้อมูลตรงกันข้าม\nทั้งสองใช้พาดหัวที่น่าตกใจ",
+            question: "แนวทางที่เหมาะสมที่สุดคืออะไร?",
+            options: [
+              ["เลือกเชื่อเว็บไซต์ที่พาดหัวแรงกว่า", 0],
+              ["แชร์ทั้งสองข่าวพร้อมบอกว่าไม่รู้จริงไหม", 4],
+              ["ตรวจสอบแหล่งปฐมภูมิและเปรียบเทียบหลายแหล่งน่าเชื่อถือ", 10],
+              ["เชื่อเว็บที่เพื่อนส่งมา", 1]
+            ],
+            remember: "เมื่อข้อมูลขัดแย้ง ให้ชะลอการแชร์และย้อนกลับไปหาต้นทาง",
+            clues: "แหล่งปฐมภูมิ เช่น ประกาศ หน่วยงาน งานวิจัย หรือคำชี้แจงโดยตรง"
+          }
+        ]
+      },
+      {
+        id: 4, icon: "scan-search", title: "PHISHING HUNTER", subtitle: "จับโจรในเงามืด",
+        badge: "PHISHING HUNTER", badgeIcon: "shield-alert",
+        scenarios: [
+          {
+            title: "อีเมลจากธนาคาร", type: "email", icon: "mail-warning",
+            mock: "From: security@bank-support-alert.com\nSubject: โปรดยืนยันบัญชีของคุณ\n\nคลิกที่นี่เพื่อยืนยัน มิฉะนั้นบัญชีจะถูกจำกัดการใช้งาน",
+            question: "จุดที่ควรตรวจสอบเป็นอันดับแรกคืออะไร?",
+            options: [
+              ["สีและโลโก้ในอีเมล", 4],
+              ["ชื่อโดเมนผู้ส่ง และเข้าตรวจสอบผ่านช่องทางทางการเอง", 10],
+              ["จำนวนเครื่องหมายตกใจ", 7],
+              ["ตอบกลับอีเมลเพื่อถามว่าจริงหรือไม่", 1]
+            ],
+            remember: "ผู้ส่งที่ดูคล้ายของจริงอาจมีโดเมนต่างไปเพียงเล็กน้อย",
+            clues: "ตรวจส่วนหลัง @, อย่ากดลิงก์ในอีเมลที่น่าสงสัย"
+          },
+          {
+            title: "เว็บไซต์ที่เหมือนจริง", type: "email", icon: "monitor-x",
+            mock: "หน้าเข้าสู่ระบบมีโลโก้เหมือนเว็บไซต์จริง\nแต่ URL บนเบราว์เซอร์คือ: www.faceboook-login.com",
+            question: "คุณควรทำอย่างไร?",
+            options: [
+              ["เข้าสู่ระบบ เพราะหน้าเว็บเหมือนของจริง", 0],
+              ["ปิดหน้าเว็บ และพิมพ์เว็บไซต์หรือเปิดแอปทางการเอง", 10],
+              ["กรอกเฉพาะอีเมลแต่ไม่กรอกรหัสผ่าน", 1],
+              ["ถ่ายภาพหน้าเว็บส่งให้เพื่อน", 4]
+            ],
+            remember: "หน้าตาเลียนแบบได้ง่าย แต่ URL เป็นข้อมูลสำคัญที่ต้องตรวจ",
+            clues: "ตัวสะกดเกินมา, โดเมนไม่เป็นทางการ, ลิงก์จากแหล่งไม่รู้จัก"
+          },
+          {
+            title: "หน้า Login ที่ขอทุกอย่าง", type: "email", icon: "layout-template",
+            mock: "หลังเปิดลิงก์จาก SMS หน้าเว็บไซต์ขอ:\nUsername + Password + OTP\nพร้อมข้อความ “ยืนยันเพื่อรับสิทธิ์ทันที”",
+            question: "การตัดสินใจใดปลอดภัยที่สุด?",
+            options: [
+              ["กรอกข้อมูลเพราะมีสัญลักษณ์กุญแจในเบราว์เซอร์", 0],
+              ["หยุดกรอก ปิดหน้าเว็บ และเปลี่ยนรหัสผ่านหากกรอกไปแล้ว", 10],
+              ["กรอก Username ก่อน แล้วค่อยดูต่อ", 1],
+              ["ส่ง OTP เฉพาะเมื่อหน้าเว็บขอซ้ำ", 0]
+            ],
+            remember: "HTTPS หรือสัญลักษณ์กุญแจไม่ได้ยืนยันว่าเว็บไซต์นั้นเป็นของจริง",
+            clues: "เว็บไซต์ปกติไม่ควรขอ OTP จากลิงก์แปลก ๆ พร้อมข้อมูลเข้าสู่ระบบ"
+          }
+        ]
+      },
+      {
+        id: 5, icon: "fingerprint", title: "PERSONAL DATA", subtitle: "ปกป้องตัวตนของคุณ",
+        badge: "DATA GUARDIAN", badgeIcon: "shield-check",
+        scenarios: [
+          {
+            title: "ขอรูปบัตรประชาชน", type: "post", icon: "id-card",
+            mock: "คนรู้จักจากเกมออนไลน์บอกว่า:\n“ส่งรูปบัตรประชาชนมาหน่อย จะช่วยสมัครกิจกรรมพิเศษให้”",
+            question: "คุณควรทำอย่างไร?",
+            options: [
+              ["ส่งรูปโดยปิดเลขบัตรบางส่วน", 1],
+              ["ไม่ส่งข้อมูล และตรวจสอบกิจกรรมจากผู้จัดโดยตรง", 10],
+              ["ส่งเฉพาะด้านหน้าบัตร", 0],
+              ["ขอให้เขาส่งรูปบัตรมาก่อน", 1]
+            ],
+            remember: "บัตรประชาชนเป็นข้อมูลอ่อนไหว ไม่ควรส่งให้บุคคลที่ไม่ยืนยันตัวตน",
+            clues: "ความสัมพันธ์ออนไลน์ไม่ได้ยืนยันตัวตนจริง และกิจกรรมที่แท้มักมีช่องทางทางการ"
+          },
+          {
+            title: "รูปบัตรนักเรียน", type: "post", icon: "image",
+            mock: "คุณกำลังจะโพสต์รูปบัตรนักเรียนเพื่อฉลองวันเปิดเทอม\nในภาพเห็นชื่อ โรงเรียน รหัสนักเรียน และวันเกิด",
+            question: "ทางเลือกใดเหมาะสมที่สุด?",
+            options: [
+              ["โพสต์ได้ เพราะเป็นเพื่อนเท่านั้นที่เห็น", 4],
+              ["ไม่โพสต์ หรือปิดข้อมูลสำคัญทั้งหมดก่อนแชร์", 10],
+              ["โพสต์แล้วลบในวันถัดไป", 1],
+              ["โพสต์เฉพาะ Story", 1]
+            ],
+            remember: "เมื่อข้อมูลถูกเผยแพร่ เราควบคุมการบันทึกหรือส่งต่อได้ยาก",
+            clues: "ชื่อ รหัส วันเกิด และสถานศึกษา สามารถถูกนำไปใช้ประกอบการหลอกลวงได้"
+          },
+          {
+            title: "สิทธิ์เข้าถึงแอป", type: "post", icon: "toggle-right",
+            mock: "แอปไฟฉายขอสิทธิ์:\nกล้อง • รายชื่อติดต่อ • ไมโครโฟน • ตำแหน่ง • รูปภาพทั้งหมด",
+            question: "คุณควรเลือกอะไร?",
+            options: [
+              ["อนุญาตทั้งหมดเพื่อให้แอปทำงานเร็ว", 0],
+              ["ตรวจความจำเป็นของสิทธิ์ และไม่อนุญาตสิ่งที่ไม่เกี่ยวข้อง", 10],
+              ["อนุญาตก่อน แล้วค่อยลบแอปภายหลัง", 4],
+              ["ให้สิทธิ์รายชื่อติดต่ออย่างเดียว", 1]
+            ],
+            remember: "ให้สิทธิ์เท่าที่จำเป็นต่อหน้าที่ของแอป และตรวจสอบได้ภายหลังในการตั้งค่า",
+            clues: "แอปไฟฉายไม่ควรต้องใช้รายชื่อติดต่อหรือไมโครโฟน"
+          }
+        ]
+      }
+    ];
+
+    let state = JSON.parse(localStorage.getItem("dsq_state")) || {
+      name: "", total: 0, completed: [], scores: {}, badges: [], currentMission: 1, answers: {}
+    };
+    let activeMission = null;
+    let currentQuestion = 0;
+
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, ch => ({
+        "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+      }[ch]));
+    }
+
+    function save() {
+      localStorage.setItem("dsq_state", JSON.stringify(state));
+      updateNav();
+    }
+
+    function updateNav() {
+      const chip = document.getElementById("playerChip");
+      const safeName = escapeHTML(state.name);
+      chip.innerHTML = state.name ? `<i data-lucide="user" class="icon-sm"></i> ${safeName} · ${state.total} SP` : `<i data-lucide="user" class="icon-sm"></i> ผู้เล่นใหม่`;
+      document.getElementById("badgeNav").classList.toggle("hidden", !state.name);
+      document.getElementById("resetNav").classList.toggle("hidden", !state.name);
+      lucide.createIcons();
+    }
+
+    // ฟังก์ชัน Render หลัก (รัน Lucide ทุกครั้งที่มีการอัปเดต DOM)
+    function render(html) {
+      document.getElementById("screen").innerHTML = `<section class="page">${html}</section>`;
+      updateNav();
+      lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+
+    function home() {
+      render(`
+        <div class="hero">
+          <div>
+            <div class="eyebrow"><i data-lucide="sparkles" class="icon-sm"></i> Interactive Learning</div>
+            <h1>DIGITAL <span>SAFETY</span> QUEST</h1>
+            <h2>เรียนรู้ให้ทันภัย ก่อนภัยจะมาถึงคุณ</h2>
+            <p class="lead">เกมจำลองสถานการณ์ที่จะพาคุณออกสำรวจภัยออนไลน์ ฝึกวิเคราะห์และตัดสินใจอย่างรอบคอบ บนอินเทอร์เฟซที่ใช้งานง่าย</p>
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="startJourney()"><i data-lucide="play" class="icon-sm"></i> เริ่มต้นใช้งาน</button>
+              <button class="btn btn-secondary" onclick="howToPlay()"><i data-lucide="info" class="icon-sm"></i> ข้อมูลเพิ่มเติม</button>
+            </div>
+            <div class="stats">
+              <div class="stat"><b>5</b><span>Missions</span></div>
+              <div class="stat"><b>15</b><span>Challenges</span></div>
+              <div class="stat"><b>150</b><span>Safety Points</span></div>
+            </div>
+          </div>
+          <div class="shield-visual">
+            <div class="floating f1"><i data-lucide="search" class="icon-sm"></i> ตรวจสอบก่อนเชื่อ</div>
+            <div class="floating f2"><i data-lucide="lock" class="icon-sm"></i> ปกป้องบัญชี</div>
+            <div class="floating f3"><i data-lucide="mouse-pointer-click" class="icon-sm"></i> คิดก่อนคลิก</div>
+            <div class="shield"><i data-lucide="shield-check" style="width: 80px; height: 80px; stroke-width: 1;"></i></div>
+          </div>
+        </div>
+      `);
+    }
+
+    function howToPlay() {
+      render(`
+        <div class="panel">
+          <div class="eyebrow">ABOUT THE PLATFORM</div>
+          <h2>คู่มือการใช้งาน</h2>
+          <p class="muted">คุณจะพบ 5 ภารกิจหลัก ภารกิจละ 3 สถานการณ์ เลือกแนวทางที่คุณคิดว่าเหมาะสมที่สุด แล้วเรียนรู้จากผลลัพธ์</p>
+          <div class="note"><b><i data-lucide="graduation-cap" class="icon-sm"></i> เน้นการเรียนรู้</b><p>ไม่มี Game Over คุณสามารถทำต่อไปได้เสมอ คะแนนจะแสดงระดับความรอบคอบของการตัดสินใจในครั้งแรก</p></div>
+          <div class="note"><b><i data-lucide="award" class="icon-sm"></i> ความสำเร็จ</b><p>ผ่านแต่ละภารกิจเพื่อรับ Badge และประเมินโปรไฟล์ของคุณเมื่อเสร็จสิ้นภารกิจทั้งหมด</p></div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="startJourney()">พร้อมใช้งาน <i data-lucide="arrow-right" class="icon-sm"></i></button>
+            <button class="btn btn-secondary" onclick="home()">กลับหน้าแรก</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function startJourney() {
+      if (state.name) return missionMap();
+      render(`
+        <div class="panel">
+          <div class="eyebrow">USER REGISTRATION</div>
+          <h2>ข้อมูลเบื้องต้น</h2>
+          <p class="muted">ระบุชื่อหรือนามแฝงของคุณ เพื่อสร้างโปรไฟล์ความปลอดภัย</p>
+          <input id="nameInput" class="input" maxlength="24" placeholder="ระบุชื่อของคุณ" autocomplete="off">
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="createProfile()">ดำเนินการต่อ <i data-lucide="arrow-right" class="icon-sm"></i></button>
+            <button class="btn btn-secondary" onclick="home()">ย้อนกลับ</button>
+          </div>
+        </div>
+      `);
+      setTimeout(() => document.getElementById("nameInput").focus(), 300);
+    }
+
+    function createProfile() {
+      const name = document.getElementById("nameInput").value.trim();
+      if (!name) return showToast("กรุณาระบุชื่อก่อนเริ่มต้น", "var(--danger)", "alert-circle");
+      state.name = name;
+      save();
+      missionMap();
+    }
+
+    function missionMap() {
+      const completed = state.completed.length;
+      const cards = missions.map(m => {
+        const done = state.completed.includes(m.id);
+        const available = m.id === 1 || state.completed.includes(m.id - 1);
+        const status = done ? "✓ Completed" : available ? "Available" : "Locked";
+        return `
+          <button class="mission-card ${done ? "completed" : ""} ${available ? "available" : "locked"}"
+            ${available ? `onclick="missionIntro(${m.id})"` : ""}>
+            <span class="mission-status">${status}</span>
+            <div class="icon-container"><i data-lucide="${m.icon}" class="icon-lg"></i></div>
+            <h3>MISSION ${String(m.id).padStart(2, "0")}</h3>
+            <strong>${m.title}</strong>
+            <p>${m.subtitle}</p>
+          </button>`;
+      }).join("");
+
+      render(`
+        <div class="section-title">
+          <div><div class="eyebrow">DASHBOARD</div><h2>ยินดีต้อนรับ ${escapeHTML(state.name)}</h2><p class="muted" style="margin:4px 0 0;">ฝึกคิดก่อนคลิก เพื่อสร้างภูมิคุ้มกันดิจิทัล</p></div>
+        </div>
+        <div class="quest-progress">
+          <div class="progress-head"><span>ความคืบหน้า (${completed}/5)</span><span>${completed * 20}%</span></div>
+          <div class="progress"><i style="width:${completed * 20}%"></i></div>
+        </div>
+        <div class="mission-grid">${cards}</div>
+      `);
+    }
+
+    function missionIntro(id) {
+      const m = missions.find(x => x.id === id);
+      render(`
+        <div class="panel">
+          <div class="result-icon"><i data-lucide="${m.icon}" style="width:56px;height:56px;stroke-width:1;"></i></div>
+          <div class="eyebrow">MISSION ${String(m.id).padStart(2, "0")}</div>
+          <h2>${m.title}</h2>
+          <p class="muted">${m.subtitle}</p>
+          <div class="note"><b><i data-lucide="target" class="icon-sm"></i> เป้าหมายของภารกิจ</b><p>${missionGoal(id)}</p></div>
+          <div class="note"><b><i data-lucide="layout-list" class="icon-sm"></i> ระบบคะแนน</b><p>3 สถานการณ์ · สูงสุด 10 SP ต่อข้อ · คำตอบที่เสี่ยงก็ยังได้รับคะแนนตามระดับความปลอดภัย เพื่อให้ทุกคำตอบเป็นการเรียนรู้</p></div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="playMission(${id})"><i data-lucide="play" class="icon-sm"></i> เริ่มภารกิจ</button>
+            <button class="btn btn-secondary" onclick="missionMap()">กลับแดชบอร์ด</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function missionGoal(id) {
+      return [
+        "สังเกตข้อความหลอกลวง ไม่เปิดเผยรหัส OTP และตรวจสอบผ่านช่องทางทางการ",
+        "สร้างรหัสผ่านที่ปลอดภัย ใช้รหัสต่างกันในแต่ละบริการ และเปิดใช้ 2FA",
+        "ตรวจสอบความน่าเชื่อถือของแหล่งที่มา และไม่ส่งต่อข้อมูลที่ยังไม่ได้รับการยืนยัน",
+        "สังเกตความผิดปกติของเว็บไซต์และอีเมล ป้องกันการถูกหลอกลวง",
+        "จำกัดการเข้าถึงข้อมูลอ่อนไหว และให้สิทธิ์แอปพลิเคชันเท่าที่จำเป็น"
+      ][id - 1];
+    }
+
+    function playMission(id) {
+      const mission = missions.find(x => x.id === id);
+      if (!mission) return;
+      const available = id === 1 || state.completed.includes(id - 1);
+      if (!available) {
+        showToast("กรุณาผ่านภารกิจก่อนหน้า", "var(--warning)", "lock");
+        return missionMap();
+      }
+      activeMission = mission;
+      currentQuestion = 0;
+      playQuestion();
+    }
+
+    function mockHTML(s) {
+      const icon = `<i data-lucide="${s.icon || 'message-square'}" class="icon-sm"></i>`;
+      if (s.type === "sms") return `<div class="mock-ui"><div class="mock-top">${icon} Messages · ผู้ส่งไม่ระบุชื่อ</div><div class="bubble">${s.mock}</div></div>`;
+      if (s.type === "post") return `<div class="mock-ui"><div class="mock-top">${icon} Social Feed · เนื้อหาที่ถูกแชร์</div><div class="post">${s.mock}</div></div>`;
+      if (s.type === "email") return `<div class="mock-ui"><div class="mock-top">${icon} Mail Inbox</div><div class="email">${s.mock}</div></div>`;
+      return `<div class="mock-ui"><div class="mock-top">${icon} Security Setting</div><div style="padding:16px;background:var(--surface);border-radius:8px;border:1px solid var(--line);"><div style="letter-spacing:4px;font-size:20px;color:var(--primary);background:var(--bg);padding:12px;border-radius:6px;border:1px solid var(--line);">••••••••••••••••</div><div style="display:flex;gap:6px;margin-top:12px;"><i style="flex:1;height:4px;background:var(--success);border-radius:2px;"></i><i style="flex:1;height:4px;background:var(--success);border-radius:2px;"></i><i style="flex:1;height:4px;background:var(--success);border-radius:2px;"></i><i style="flex:1;height:4px;background:var(--success);border-radius:2px;"></i><i style="flex:1;height:4px;background:var(--success);border-radius:2px;"></i></div><p class="muted" style="font-size:13px; margin:12px 0 0;">${s.mock}</p></div></div>`;
+    }
+
+    function playQuestion() {
+      const s = activeMission.scenarios[currentQuestion];
+      const options = s.options.map((o, i) => `
+        <button class="option" onclick="chooseAnswer(${i})">
+          <span class="option-key">${"ABCD"[i]}</span><span>${o[0]}</span>
+        </button>`).join("");
+
+      render(`
+        <div class="game-header">
+          <div>
+            <div class="mission-label">MISSION ${String(activeMission.id).padStart(2, "0")}</div>
+            <h2>${activeMission.title}</h2>
+            <div class="progress" style="margin-top:8px; width: 100px;"><i style="width:${((currentQuestion + 1) / 3) * 100}%"></i></div>
+          </div>
+          <div class="safety-box"><span>SAFETY POINT</span><b>${state.total} / 150</b></div>
+        </div>
+        <div class="scenario-card">
+          <div class="eyebrow" style="margin-bottom:12px;">สถานการณ์ที่ ${currentQuestion + 1}</div>
+          <h3>${s.title}</h3>
+          ${mockHTML(s)}
+          <h3 style="font-size:18px; margin-top:24px;">${s.question}</h3>
+          <div class="options">${options}</div>
+        </div>
+      `);
+    }
+
+    function chooseAnswer(index) {
+      const s = activeMission.scenarios[currentQuestion];
+      const [answer, points] = s.options[index];
+      const key = `${activeMission.id}-${currentQuestion}`;
+      const firstTry = state.answers[key] === undefined;
+
+      if (firstTry) {
+        state.answers[key] = points;
+        state.total += points;
+        save();
+      }
+
+      const level = points >= 10 ? ["Excellent Decision", "good", "ตัวเลือกที่ยอดเยี่ยม!", "check-circle-2"] :
+                    points >= 7 ? ["Good Thinking", "good", "การคิดวิเคราะห์ที่ดี!", "thumbs-up"] :
+                    points >= 4 ? ["Be Careful", "warn", "ทางเลือกนี้มีความเสี่ยงแฝงอยู่", "alert-triangle"] :
+                    ["High Risk", "bad", "ตัวเลือกนี้มีความเสี่ยงสูงมาก", "octagon-alert"];
+                    
+      const explanation = points >= 10
+        ? `“${answer}” เป็นแนวทางที่ปลอดภัยที่สุด ช่วยหยุดความเสี่ยงก่อนเกิดความเสียหาย`
+        : points >= 7
+        ? `“${answer}” เป็นการคิดอย่างรอบคอบ แต่แนะนำให้ตรวจสอบกับช่องทางทางการโดยตรงเพิ่มด้วย`
+        : points >= 4
+        ? `“${answer}” อาจดูปลอดภัยในบางส่วน แต่ยังไม่เพียงพอต่อการป้องกันการรั่วไหลของข้อมูล`
+        : `“${answer}” อาจนำไปสู่การสูญเสียข้อมูลหรือทรัพย์สิน ผู้ไม่หวังดีมักใช้ความเร่งด่วนเข้ากดดัน`;
+
+      render(`
+        <div class="game-header">
+          <div><div class="mission-label">MISSION ${String(activeMission.id).padStart(2, "0")}</div><h2>${activeMission.title}</h2></div>
+          <div class="safety-box"><span>SAFETY POINT</span><b>${state.total} / 150</b></div>
+        </div>
+        <div class="feedback ${level[1]}">
+          <div class="eyebrow" style="margin-bottom:12px;">${level[0]}</div>
+          <h3><i data-lucide="${level[3]}"></i> ${level[2]}</h3>
+          <div class="score-gain">${firstTry ? "+" + points + " SP" : "ทบทวนเนื้อหา"} ${firstTry ? `<span class="score-pill"><i data-lucide="shield" class="icon-sm"></i> ${points >= 10 ? "ปลอดภัยมาก" : points >= 7 ? "ค่อนข้างปลอดภัย" : points >= 4 ? "มีความเสี่ยง" : "เสี่ยงสูง"}</span>` : ""}</div>
+          <p class="muted" style="font-size: 15px;">${explanation}</p>
+          
+          <div class="note"><b><i data-lucide="search" class="icon-sm"></i> จุดสังเกตที่สำคัญ</b><p>${s.clues}</p></div>
+          <div class="note"><b><i data-lucide="lightbulb" class="icon-sm"></i> หลักการที่ควรจำ</b><p>${s.remember}</p></div>
+          
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="nextQuestion()">${currentQuestion < 2 ? "ส่วนต่อไป" : "สรุปผลการปฏิบัติการ"} <i data-lucide="arrow-right" class="icon-sm"></i></button>
+            <button class="btn btn-secondary" onclick="playQuestion()">ดูสถานการณ์อีกครั้ง</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function nextQuestion() {
+      if (currentQuestion < 2) {
+        currentQuestion++;
+        playQuestion();
+      } else {
+        completeMission();
+      }
+    }
+
+    function completeMission() {
+      const id = activeMission.id;
+      const missionScore = activeMission.scenarios.reduce((sum, _, i) => sum + (state.answers[`${id}-${i}`] || 0), 0);
+
+      if (!state.completed.includes(id)) {
+        state.completed.push(id);
+        state.badges.push(activeMission.badge);
+        state.currentMission = Math.min(id + 1, 5);
+        save();
+        showToast(`ได้รับ Achievement: ${activeMission.badge}`, "var(--primary)", "award");
+      }
+
+      const strengths = missionScore >= 24
+        ? "วิเคราะห์สถานการณ์ได้รอบคอบและเลือกแนวทางที่ลดความเสี่ยงได้ดี"
+        : missionScore >= 15
+          ? "เริ่มมองเห็นสัญญาณความเสี่ยงและสามารถนำหลักการไปใช้ได้บางส่วน"
+          : "เริ่มต้นฝึกสังเกตความเสี่ยงได้แล้ว และควรทบทวนจุดสังเกตสำคัญเพิ่มเติม";
+      const caution = missionScore >= 24
+        ? "รักษานิสัยตรวจสอบก่อนคลิก ก่อนแชร์ และก่อนเปิดเผยข้อมูลให้สม่ำเสมอ"
+        : "ทบทวนคำอธิบายของแต่ละสถานการณ์ โดยเฉพาะตัวเลือกที่มีความเสี่ยงแฝง";
+
+      render(`
+        <div class="result-card">
+          <div class="result-icon"><i data-lucide="check-circle" style="width:64px;height:64px;stroke-width:1;"></i></div>
+          <div class="eyebrow">MISSION COMPLETE</div>
+          <h1 style="margin-top:0;">ภารกิจเสร็จสิ้น</h1>
+          <p class="muted">${activeMission.title}</p>
+          <div class="score-total">${missionScore} / 30</div>
+          
+          <div class="insight"><b><i data-lucide="check" class="icon-sm"></i> จุดแข็งที่พบ</b><span>${strengths}</span></div>
+          <div class="insight"><b><i data-lucide="alert-circle" class="icon-sm"></i> ข้อเสนอแนะ</b><span>${caution}</span></div>
+          <div class="insight"><b><i data-lucide="award" class="icon-sm"></i> ความสำเร็จ</b><span>${activeMission.badge}</span></div>
+          
+          <div class="btn-group" style="justify-content: center; margin-top: 32px;">
+            <button class="btn btn-primary" onclick="${id === 5 ? "overallResult()" : `missionIntro(${id + 1})`}">${id === 5 ? "ดูรายงานสรุปทั้งหมด" : "เข้าสู่ภารกิจถัดไป"} <i data-lucide="arrow-right" class="icon-sm"></i></button>
+            <button class="btn btn-secondary" onclick="missionMap()"><i data-lucide="layout-grid" class="icon-sm"></i> แดชบอร์ด</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function overallResult() {
+      const level = state.total >= 121 ? "DIGITAL SAFETY MASTER" : state.total >= 91 ? "DIGITAL DETECTIVE" : state.total >= 51 ? "SAFETY GUARD" : "DIGITAL BEGINNER";
+      
+      const skillsHTML = missions.map(m => {
+        const score = m.scenarios.reduce((sum, _, i) => sum + (state.answers[`${m.id}-${i}`] || 0), 0);
+        return `
+          <div style="margin: 16px 0; text-align: left;">
+            <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:500;">
+              <span>${m.title}</span><span>${score}/30</span>
+            </div>
+            <div class="progress" style="margin-top:8px;"><i style="width:${(score / 30) * 100}%"></i></div>
+          </div>`;
+      }).join("");
+
+      render(`
+        <div class="result-card">
+          <div class="result-icon"><i data-lucide="graduation-cap" style="width:64px;height:64px;stroke-width:1;"></i></div>
+          <div class="eyebrow">ASSESSMENT COMPLETE</div>
+          <h1 style="font-size:28px;">การประเมินเสร็จสมบูรณ์</h1>
+          <p class="muted" style="font-size:15px; margin-top:8px;">ขอแสดงความยินดี การวิเคราะห์ในครั้งนี้สะท้อนทักษะในยุคดิจิทัลของคุณ</p>
+          
+          <div class="score-total" style="margin: 32px 0;">${state.total} / 150</div>
+          
+          <div class="note" style="text-align:left;">
+            <b><i data-lucide="shield" class="icon-sm"></i> ระดับความปลอดภัย: ${level}</b>
+            <p>คะแนนดังกล่าวเป็นการสะท้อนความรอบคอบเบื้องต้นในการจัดการกับสถานการณ์จำลอง</p>
+          </div>
+          
+          <div style="margin-top:32px">${skillsHTML}</div>
+          
+          <div class="btn-group" style="justify-content: center; margin-top: 40px;">
+            <button class="btn btn-primary" onclick="safetyProfile()"><i data-lucide="bar-chart-2" class="icon-sm"></i> ตรวจสอบโปรไฟล์</button>
+            <button class="btn btn-secondary" onclick="showBadges()"><i data-lucide="award" class="icon-sm"></i> Achievements</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function safetyProfile() {
+      const scores = missions.map(m =>
+        m.scenarios.reduce((sum, _, i) => sum + (state.answers[`${m.id}-${i}`] || 0), 0)
+      );
+      const total = scores.reduce((a, b) => a + b, 0);
+      const max = Math.max(...scores);
+      const min = Math.min(...scores);
+      const strong = missions[scores.indexOf(max)];
+      const improve = missions[scores.indexOf(min)];
+
+      const skillRows = missions.map((m, i) => {
+        const score = scores[i];
+        const pct = Math.round((score / 30) * 100);
+        return `
+          <div class="skill-row">
+            <div class="skill-head"><span>${m.title}</span><span>${score}/30</span></div>
+            <div class="progress" style="margin-top:8px;"><i style="width:${pct}%"></i></div>
+          </div>`;
+      }).join("");
+
+      render(`
+        <div class="result-card">
+          <div class="result-icon"><i data-lucide="pie-chart" style="width:56px;height:56px;stroke-width:1;"></i></div>
+          <div class="eyebrow">PERSONAL PROFILE</div>
+          <h1 style="font-size:28px;">รายงานโปรไฟล์ความปลอดภัย</h1>
+          <p class="muted">สรุปจากการตัดสินใจครั้งแรกของทั้ง 15 สถานการณ์</p>
+
+          <div class="profile-grid">
+            <div class="profile-stat"><b>${total}/150</b><span>Safety Points</span></div>
+            <div class="profile-stat"><b>${state.completed.length}/5</b><span>Mission Complete</span></div>
+          </div>
+
+          <div style="margin-top:28px;">${skillRows}</div>
+
+          <div class="insight">
+            <b><i data-lucide="trending-up" class="icon-sm"></i> จุดแข็งเด่นชัด</b>
+            <span>ด้าน ${strong.title} ได้ ${max}/30 แสดงว่าคุณมีแนวโน้มในการตัดสินใจด้านนี้ได้ดี</span>
+          </div>
+
+          <div class="insight">
+            <b><i data-lucide="target" class="icon-sm"></i> ด้านที่ควรเสริม</b>
+            <span>ด้าน ${improve.title} ได้ ${min}/30 ควรกลับไปทบทวนจุดสังเกตและหลักการสำคัญของภารกิจนี้</span>
+          </div>
+
+          <div class="insight">
+            <b><i data-lucide="lightbulb" class="icon-sm"></i> หลักการสำคัญ</b>
+            <span>หยุด → ตรวจสอบ → ค่อยตัดสินใจ โดยเฉพาะเมื่อพบความเร่งด่วน ลิงก์แปลก หรือการขอข้อมูลส่วนตัว</span>
+          </div>
+
+          <div class="btn-group" style="justify-content:center;margin-top:32px;">
+            <button class="btn btn-primary" onclick="showBadges()">ดู Achievements <i data-lucide="arrow-right" class="icon-sm"></i></button>
+            <button class="btn btn-secondary" onclick="missionMap()">กลับหน้าแดชบอร์ด</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function showBadges() {
+      const allBadges = [
+        ["shield", "Digital Beginner", "เริ่มต้นใช้งานระบบ", true],
+        ["shield-check", "Safety Guard", "ผ่านภารกิจอย่างน้อย 3 ด่าน", state.completed.length >= 3],
+        ...missions.map(m => [m.badgeIcon, m.badge, `ผ่าน ${m.title}`, state.badges.includes(m.badge)]),
+        ["trophy", "Digital Safety Master", "สำเร็จครบทั้ง 5 ภารกิจ", state.completed.length === 5]
+      ];
+
+      render(`
+        <div class="section-title">
+          <div><div class="eyebrow">ACHIEVEMENTS</div><h2>รายการความสำเร็จ</h2></div>
+          <span class="muted" style="font-size:14px;">${allBadges.filter(x => x[3]).length} / ${allBadges.length}</span>
+        </div>
+        <div class="badge-grid">
+          ${allBadges.map(b => `
+            <div class="badge ${b[3] ? "unlocked" : "locked"}">
+              <i data-lucide="${b[0]}" class="icon-lg" style="color: ${b[3] ? 'var(--secondary)' : 'var(--muted)'}"></i>
+              <b>${b[1]}</b>
+              <small>${b[3] ? b[2] : "ยังไม่สำเร็จ"}</small>
+            </div>`).join("")}
+        </div>
+        <div class="btn-group" style="margin-top: 32px;">
+          <button class="btn btn-primary" onclick="${state.completed.length === 5 ? "overallResult()" : "missionMap()"}"><i data-lucide="arrow-left" class="icon-sm"></i> ${state.completed.length === 5 ? "ดูรายงานสรุป" : "กลับหน้าแดชบอร์ด"}</button>
+        </div>
+      `);
+    }
+
+    function resetGame() {
+      if (!confirm("ระบบจะลบข้อมูลประวัติการทำภารกิจและผลคะแนนทั้งหมด ยืนยันที่จะเริ่มดำเนินการใหม่หรือไม่?")) return;
+      localStorage.removeItem("dsq_state");
+      state = { name: "", total: 0, completed: [], scores: {}, badges: [], currentMission: 1, answers: {} };
+      home();
+      showToast("รีเซ็ตระบบเรียบร้อยแล้ว", "var(--primary)", "rotate-ccw");
+    }
+
+    function showToast(message, color = "var(--primary)", icon = "info") {
+      const old = document.querySelector(".toast");
+      if (old) old.remove();
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.style.background = color;
+      toast.innerHTML = `<i data-lucide="${icon}" class="icon-sm"></i> ${message}`;
+      document.body.appendChild(toast);
+      lucide.createIcons();
+      setTimeout(() => toast.remove(), 2700);
+    }
+
+    // เริ่มต้นระบบ
+    updateNav();
+    home();
+  </script>
+</body>
+</html>
